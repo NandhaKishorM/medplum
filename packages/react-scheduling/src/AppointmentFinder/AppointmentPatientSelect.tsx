@@ -15,8 +15,9 @@ import { useCallback, useMemo } from 'react';
 const PATIENT_SEARCH_CRITERIA = { _count: '20', _sort: 'birthdate' };
 
 /**
- * The v2-0203 code marking an identifier as a medical record number.
+ * The v2-0203 coding marking an identifier as a medical record number.
  */
+const MRN_TYPE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/v2-0203';
 const MRN_TYPE_CODE = 'MR';
 
 export interface AppointmentPatientSelectProps {
@@ -113,6 +114,6 @@ function getMrn(patient: Patient, system: string | undefined): string | undefine
     return getIdentifier(patient, system);
   }
   return patient.identifier?.find((identifier) =>
-    identifier.type?.coding?.some((coding) => coding.code === MRN_TYPE_CODE)
+    identifier.type?.coding?.some((coding) => coding.system === MRN_TYPE_SYSTEM && coding.code === MRN_TYPE_CODE)
   )?.value;
 }

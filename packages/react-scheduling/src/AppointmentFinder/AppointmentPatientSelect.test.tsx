@@ -4,6 +4,7 @@ import type { WithId } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
+import type { RenderResult } from '@testing-library/react';
 import type { JSX, ReactNode } from 'react';
 import { clickAutocompleteOption, typeInAutocomplete } from '../test-utils/asyncAutocomplete';
 import { act, fireEvent, render, screen } from '../test-utils/render';
@@ -40,15 +41,25 @@ const ABE: WithId<Patient> = {
   identifier: [{ system: 'http://example.com/mrn', value: 'MRN-0001' }],
 };
 
+// Carries `MR` under a system of the project's own. Kept out of the Bookworm family
+// so the searches above are unaffected.
+const NED: WithId<Patient> = {
+  resourceType: 'Patient',
+  id: 'ned',
+  name: [{ given: ['Ned'], family: 'Leftorium' }],
+  birthDate: '1954-03-02',
+  identifier: [{ type: { coding: [{ system: 'http://example.org/codes', code: 'MR' }] }, value: 'LOCAL-9' }],
+};
+
 function setup(
   onChange: (patient: WithId<Patient> | undefined) => void,
   patient?: WithId<Patient>,
   mrnSystem?: string
-): void {
+): RenderResult {
   const wrapper = ({ children }: { children: ReactNode }): JSX.Element => (
     <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
   );
-  render(<AppointmentPatientSelect patient={patient} onChange={onChange} mrnSystem={mrnSystem} />, wrapper);
+  return render(<AppointmentPatientSelect patient={patient} onChange={onChange} mrnSystem={mrnSystem} />, wrapper);
 }
 
 describe('AppointmentPatientSelect', () => {
@@ -56,6 +67,7 @@ describe('AppointmentPatientSelect', () => {
     await medplum.createResource(HOMER);
     await medplum.createResource(MARGE);
     await medplum.createResource(ABE);
+    await medplum.createResource(NED);
   });
 
   beforeEach(() => {
@@ -104,6 +116,15 @@ describe('AppointmentPatientSelect', () => {
     expect(await screen.findByText('Born 4/1/1927')).toBeInTheDocument();
   });
 
+  test('Passes over an MR code minted under some other system', async () => {
+    setup(vi.fn());
+
+    await typeInAutocomplete(screen.getByPlaceholderText('Search by name'), 'Leftorium');
+
+    expect(await screen.findByText('Born 3/2/1954')).toBeInTheDocument();
+    expect(screen.queryByText(/LOCAL-9/)).not.toBeInTheDocument();
+  });
+
   test('Reads MRNs from a named system, for a project that does not type them', async () => {
     setup(vi.fn(), undefined, 'http://example.com/mrn');
 
@@ -129,6 +150,22 @@ describe('AppointmentPatientSelect', () => {
   test('Starts on the patient it was given', async () => {
     setup(vi.fn(), HOMER);
     expect(await screen.findByText('Homer Bookworm')).toBeInTheDocument();
+  });
+
+  // Locks the half-controlled contract documented on the prop, so that a later
+  // change to a genuinely controlled field is a visible break rather than a silent one.
+  test('Holds the patient it mounted with when the prop is reassigned', async () => {
+    const onChange = vi.fn();
+    const { rerender } = setup(onChange, HOMER);
+    await screen.findByText('Homer Bookworm');
+
+    rerender(<AppointmentPatientSelect patient={MARGE} onChange={onChange} label="Second patient" />);
+
+    // The changed label proves the re-render reached the field, so the patient
+    // standing still is the contract rather than a no-op.
+    expect(screen.getByText('Second patient')).toBeInTheDocument();
+    expect(screen.getByText('Homer Bookworm')).toBeInTheDocument();
+    expect(screen.queryByText('Marge Bookworm')).not.toBeInTheDocument();
   });
 
   test('Reports nothing chosen when the patient is cleared', async () => {

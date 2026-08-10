@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { SchedulingParametersURI, ServiceTypeReferenceURI } from '@medplum/core';
+import { SchedulingParametersURI, ServiceTypeReferenceURI, SNOMED } from '@medplum/core';
 import type {
   Appointment,
   AppointmentParticipant,
@@ -180,7 +180,6 @@ export const SatelliteRoomSchedule = buildSchedule(
  * is what lets a scheduler read the list as surgeons or anesthesiologists — a
  * plain Practitioner says nothing about which it is.
  */
-const SNOMED = 'http://snomed.info/sct';
 const PRACTITIONER_ROLE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/practitioner-role';
 
 export const SurgeryService: WithId<HealthcareService> = {

@@ -27,6 +27,11 @@
   background-color: var(--mantine-color-default-hover);
 }
 
+.pickRow:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .pickRow[data-checked] {
   background-color: var(--mantine-color-blue-light);
   box-shadow: inset 0 0 0 1px var(--mantine-primary-color-filled);
