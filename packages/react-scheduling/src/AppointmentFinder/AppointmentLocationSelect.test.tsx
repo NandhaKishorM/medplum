@@ -18,6 +18,21 @@ function setup(onChange: (location: WithId<Location> | undefined) => void, locat
   render(<AppointmentLocationSelect location={location} onChange={onChange} />, wrapper);
 }
 
+/**
+ * Waits for the sites to load, then opens the list.
+ * @returns The field's input, for typing into.
+ */
+async function openList(): Promise<HTMLElement> {
+  const input = await screen.findByRole('textbox');
+  await act(async () => {
+    expect(input).toBeEnabled();
+  });
+  await act(async () => {
+    fireEvent.click(input);
+  });
+  return input;
+}
+
 describe('AppointmentLocationSelect', () => {
   beforeAll(async () => {
     for (const resource of SchedulingFixtures) {
@@ -25,25 +40,18 @@ describe('AppointmentLocationSelect', () => {
     }
   });
 
-  test('Lists every site', async () => {
+  test('Offers every site', async () => {
     setup(vi.fn());
+    await openList();
 
-    expect(await screen.findByRole('radio', { name: /Uro Associates - Main Clinic/ })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: /Uro Associates - Satellite/ })).toBeInTheDocument();
+    expect(screen.getByText('Uro Associates - Main Clinic')).toBeInTheDocument();
+    expect(screen.getByText('Uro Associates - Satellite')).toBeInTheDocument();
   });
 
-  test('Has no search field, since a practice has few enough sites to read down', async () => {
-    setup(vi.fn());
-
-    await screen.findByRole('radio', { name: /Uro Associates - Main Clinic/ });
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-  });
-
-  test('Asks for every site at once, since there is no search to reach the rest', async () => {
+  test('Asks for every site at once, so the whole set is there to be typed against', async () => {
     const searchResources = vi.spyOn(medplum, 'searchResources');
     setup(vi.fn());
-
-    await screen.findByRole('radio', { name: /Uro Associates - Main Clinic/ });
+    await openList();
 
     const call = searchResources.mock.calls.at(-1);
     expect(call?.[1]).toStrictEqual({ _count: 100, _sort: 'name' });
@@ -53,19 +61,19 @@ describe('AppointmentLocationSelect', () => {
   test('Reports a chosen location', async () => {
     const onChange = vi.fn();
     setup(onChange);
+    await openList();
 
-    const row = await screen.findByRole('radio', { name: /Uro Associates - Main Clinic/ });
     await act(async () => {
-      fireEvent.click(row);
+      fireEvent.click(screen.getByText('Uro Associates - Main Clinic'));
     });
 
     expect(onChange).toHaveBeenCalled();
     expect((onChange.mock.calls[0][0] as WithId<Location>).id).toBe('main-clinic');
   });
 
-  test('Marks the location already chosen', async () => {
+  test('Shows the location already chosen', async () => {
     setup(vi.fn(), MainClinic);
-    expect(await screen.findByRole('radio', { name: /Uro Associates - Main Clinic/ })).toBeChecked();
+    expect(await screen.findByDisplayValue('Uro Associates - Main Clinic')).toBeInTheDocument();
   });
 
   test('Keeps a chosen site on the list even when it was not among those loaded', async () => {
@@ -73,7 +81,31 @@ describe('AppointmentLocationSelect', () => {
     setup(vi.fn(), elsewhere);
 
     // What is chosen has to stay visible, or the field reads as if nothing is.
-    expect(await screen.findByRole('radio', { name: /Uro Associates - Airport/ })).toBeChecked();
-    expect(screen.getByRole('radio', { name: /Uro Associates - Main Clinic/ })).toBeInTheDocument();
+    expect(await screen.findByDisplayValue('Uro Associates - Airport')).toBeInTheDocument();
+  });
+
+  test('Narrows the list as the user types', async () => {
+    setup(vi.fn());
+    const input = await openList();
+
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Satellite' } });
+    });
+
+    expect(screen.getByText('Uro Associates - Satellite')).toBeInTheDocument();
+    expect(screen.queryByText('Uro Associates - Main Clinic')).not.toBeInTheDocument();
+  });
+
+  test('Says where a site is, for telling two of the same name apart', async () => {
+    const addressed: WithId<Location> = {
+      ...SatelliteClinic,
+      id: 'addressed',
+      name: 'Uro Associates - Downtown',
+      address: { city: 'Springfield', state: 'IL' },
+    };
+    setup(vi.fn(), addressed);
+    await openList();
+
+    expect(screen.getByText('Springfield, IL')).toBeInTheDocument();
   });
 });
