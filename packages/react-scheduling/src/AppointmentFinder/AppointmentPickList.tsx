@@ -44,13 +44,7 @@ export interface AppointmentPickListProps {
  *
  * Chosen over a dropdown because both of the things a booking starts with — the
  * site and the visit type — are picked from a set the scheduler already knows,
- * and is faster to read down than to type into. The search field appears only
- * where the caller can use it: a practice has a handful of sites and no need to
- * search them, and as many visit types as it has ways of being busy.
- *
- * Built on Mantine's `Radio.Group` and `Radio.Card`, which supply the
- * radiogroup semantics and the checked styling: only one row can be chosen, and
- * a screen reader says which one is.
+ * and is faster to read down than to type into.
  *
  * @param props - The React props.
  * @returns The labelled list.

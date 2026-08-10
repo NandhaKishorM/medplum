@@ -37,14 +37,7 @@ export function AppointmentPatientSelect(props: AppointmentPatientSelectProps): 
   const { patient, onChange, label = 'Patient', error, disabled, mrnSystem } = props;
 
   const handleChange = useCallback((patients: WithId<Patient>[]) => onChange(patients[0]), [onChange]);
-
-  const itemComponent = useMemo(
-    () =>
-      function PatientOption(option: Readonly<AsyncAutocompleteOption<WithId<Patient>>>): JSX.Element {
-        return <PatientItem option={option} mrnSystem={mrnSystem} />;
-      },
-    [mrnSystem]
-  );
+  const itemComponent = useMemo(() => patientItemComponent(mrnSystem), [mrnSystem]);
 
   return (
     <MultiResourceInput<WithId<Patient>>
@@ -62,6 +55,21 @@ export function AppointmentPatientSelect(props: AppointmentPatientSelectProps): 
       onChange={handleChange}
     />
   );
+}
+
+/**
+ * Binds the MRN system to an option renderer. `MultiResourceInput` chooses what to
+ * render an option with rather than what to render it from, so the system has to be
+ * closed over; doing that here keeps the component itself out of the render body.
+ * @param mrnSystem - The system MRNs are issued under, when they are not typed.
+ * @returns The renderer for one option.
+ */
+function patientItemComponent(
+  mrnSystem: string | undefined
+): (props: AsyncAutocompleteOption<WithId<Patient>>) => JSX.Element {
+  return function PatientOption(props: AsyncAutocompleteOption<WithId<Patient>>): JSX.Element {
+    return <PatientItem option={props} mrnSystem={mrnSystem} />;
+  };
 }
 
 /**
