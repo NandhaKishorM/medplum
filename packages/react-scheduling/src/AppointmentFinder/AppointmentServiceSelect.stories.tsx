@@ -7,13 +7,14 @@ import { Document } from '@medplum/react';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
+import { withFixtures } from '../stories/decorators';
 import { MainClinic, SchedulingFixtures } from '../stories/scheduling';
-import { WithFixtures } from '../stories/WithFixtures';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
 
 export default {
   title: 'Medplum/AppointmentServiceSelect',
   component: AppointmentServiceSelect,
+  decorators: [withFixtures(SchedulingFixtures)],
 } as Meta;
 
 /**
@@ -29,14 +30,12 @@ export default {
 export const Basic = (): JSX.Element => {
   const [service, setService] = useState<WithId<HealthcareService>>();
   return (
-    <WithFixtures resources={SchedulingFixtures}>
-      <Document>
-        <AppointmentServiceSelect service={service} onChange={setService} />
-        <Text size="sm" c="dimmed" mt="md">
-          {service ? `Chose ${service.id}` : 'Nothing chosen yet'}
-        </Text>
-      </Document>
-    </WithFixtures>
+    <Document>
+      <AppointmentServiceSelect service={service} onChange={setService} />
+      <Text size="sm" c="dimmed" mt="md">
+        {service ? `Chose ${service.id}` : 'Nothing chosen yet'}
+      </Text>
+    </Document>
   );
 };
 
@@ -47,18 +46,14 @@ export const Basic = (): JSX.Element => {
 export const NarrowedToASite = (): JSX.Element => {
   const [service, setService] = useState<WithId<HealthcareService>>();
   return (
-    <WithFixtures resources={SchedulingFixtures}>
-      <Document>
-        <AppointmentServiceSelect service={service} onChange={setService} location={MainClinic} />
-      </Document>
-    </WithFixtures>
+    <Document>
+      <AppointmentServiceSelect service={service} onChange={setService} location={MainClinic} />
+    </Document>
   );
 };
 
 export const Disabled = (): JSX.Element => (
-  <WithFixtures resources={SchedulingFixtures}>
-    <Document>
-      <AppointmentServiceSelect service={undefined} onChange={() => undefined} disabled />
-    </Document>
-  </WithFixtures>
+  <Document>
+    <AppointmentServiceSelect service={undefined} onChange={() => undefined} disabled />
+  </Document>
 );

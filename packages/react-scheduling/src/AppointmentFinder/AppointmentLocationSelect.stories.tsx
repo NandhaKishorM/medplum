@@ -7,14 +7,9 @@ import { Document } from '@medplum/react';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
+import { withFixtures } from '../stories/decorators';
 import { MainClinic, SatelliteClinic } from '../stories/scheduling';
-import { WithFixtures } from '../stories/WithFixtures';
 import { AppointmentLocationSelect } from './AppointmentLocationSelect';
-
-export default {
-  title: 'Medplum/AppointmentLocationSelect',
-  component: AppointmentLocationSelect,
-} as Meta;
 
 /**
  * Two sites of the same name at different addresses, and a third somewhere else,
@@ -29,6 +24,12 @@ const SITES: WithId<Location>[] = [
   SatelliteClinic,
 ];
 
+export default {
+  title: 'Medplum/AppointmentLocationSelect',
+  component: AppointmentLocationSelect,
+  decorators: [withFixtures(SITES)],
+} as Meta;
+
 /**
  * Focusing the field offers every site, and typing narrows them, so a practice
  * with more sites than fit on screen is still answered in one field.
@@ -37,14 +38,12 @@ const SITES: WithId<Location>[] = [
 export const Basic = (): JSX.Element => {
   const [location, setLocation] = useState<WithId<Location>>();
   return (
-    <WithFixtures resources={SITES}>
-      <Document>
-        <AppointmentLocationSelect location={location} onChange={setLocation} />
-        <Text size="sm" c="dimmed" mt="md">
-          {location ? `Chose ${location.id}` : 'Nowhere chosen yet'}
-        </Text>
-      </Document>
-    </WithFixtures>
+    <Document>
+      <AppointmentLocationSelect location={location} onChange={setLocation} />
+      <Text size="sm" c="dimmed" mt="md">
+        {location ? `Chose ${location.id}` : 'Nowhere chosen yet'}
+      </Text>
+    </Document>
   );
 };
 
@@ -55,18 +54,14 @@ export const Basic = (): JSX.Element => {
 export const AlreadyChosen = (): JSX.Element => {
   const [location, setLocation] = useState<WithId<Location> | undefined>(SITES[0]);
   return (
-    <WithFixtures resources={SITES}>
-      <Document>
-        <AppointmentLocationSelect location={location} onChange={setLocation} />
-      </Document>
-    </WithFixtures>
+    <Document>
+      <AppointmentLocationSelect location={location} onChange={setLocation} />
+    </Document>
   );
 };
 
 export const Disabled = (): JSX.Element => (
-  <WithFixtures resources={SITES}>
-    <Document>
-      <AppointmentLocationSelect location={SITES[0]} onChange={() => undefined} disabled />
-    </Document>
-  </WithFixtures>
+  <Document>
+    <AppointmentLocationSelect location={SITES[0]} onChange={() => undefined} disabled />
+  </Document>
 );

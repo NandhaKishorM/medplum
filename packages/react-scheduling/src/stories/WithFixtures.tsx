@@ -13,8 +13,8 @@ export interface WithFixturesProps {
 /**
  * Seeds the ambient Storybook client and renders its children once the resources are in place.
  *
- * Fields that search the server search as they mount, so the fixtures have to be
- * stored before the children render rather than merely before someone types.
+ * Stored before the children render so that the first focus, which is what sends the
+ * fields searching, cannot beat the fixtures there.
  *
  * @param props - The React props.
  * @param props.resources - What to store first.
@@ -26,7 +26,7 @@ export function WithFixtures(props: WithFixturesProps): JSX.Element | null {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    Promise.all(props.resources.map((resource) => medplum.createResource(resource)))
+    Promise.all(props.resources.map((resource) => medplum.updateResource(resource)))
       .then(() => setReady(true))
       .catch(console.error);
   }, [medplum, props.resources]);
