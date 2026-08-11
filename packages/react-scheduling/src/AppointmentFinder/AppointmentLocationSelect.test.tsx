@@ -6,9 +6,9 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { RenderResult } from '@testing-library/react';
 import type { JSX, ReactNode } from 'react';
+import { MainClinic, SatelliteClinic, SchedulingFixtures } from '../stories/scheduling';
 import { clickAutocompleteOption, typeInAutocomplete } from '../test-utils/asyncAutocomplete';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { MainClinic, SatelliteClinic, SchedulingFixtures } from '../stories/scheduling';
 import { AppointmentLocationSelect } from './AppointmentLocationSelect';
 
 const medplum = new MockClient();
