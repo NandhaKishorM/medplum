@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { formatDate, getIdentifier } from '@medplum/core';
+import { HTTP_TERMINOLOGY_HL7_ORG, formatDate, getIdentifier } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
 import { MultiResourceInput } from '@medplum/react';
@@ -17,7 +17,7 @@ const PATIENT_SEARCH_CRITERIA = { _count: '20', _sort: 'birthdate' };
 /**
  * The v2-0203 coding marking an identifier as a medical record number.
  */
-const MRN_TYPE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/v2-0203';
+const MRN_TYPE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/v2-0203`;
 const MRN_TYPE_CODE = 'MR';
 
 export interface AppointmentPatientSelectProps {

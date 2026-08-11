@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, SNOMED, UCUM, createReference } from '@medplum/core';
+import { ContentType, HTTP_TERMINOLOGY_HL7_ORG, SNOMED, UCUM, createReference } from '@medplum/core';
 import type {
   Address,
   CodeableConcept,
@@ -29,7 +29,7 @@ const SIMPSONS_ADDRESS: Address = {
 const MRN_SYSTEM = 'http://example.com/mrn';
 
 const MRN_TYPE: CodeableConcept = {
-  coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v2-0203', code: 'MR', display: 'Medical Record Number' }],
+  coding: [{ system: `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/v2-0203`, code: 'MR', display: 'Medical Record Number' }],
   text: 'Medical Record Number',
 };
 
