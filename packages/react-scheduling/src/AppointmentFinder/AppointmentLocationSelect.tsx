@@ -63,7 +63,7 @@ export function AppointmentLocationSelect(props: AppointmentLocationSelectProps)
  * @param props - The option to render.
  * @returns The row.
  */
-function LocationItem(props: AsyncAutocompleteOption<WithId<Location>>): JSX.Element {
+function LocationItem(props: Readonly<AsyncAutocompleteOption<WithId<Location>>>): JSX.Element {
   return <AppointmentOptionRow label={props.label} detail={formatCityState(props.resource)} />;
 }
 

@@ -127,7 +127,7 @@ function toOption(service: WithId<HealthcareService>): AsyncAutocompleteOption<W
  * @param props - The option to render.
  * @returns The row.
  */
-function ServiceItem(props: AsyncAutocompleteOption<WithId<HealthcareService>>): JSX.Element {
+function ServiceItem(props: Readonly<AsyncAutocompleteOption<WithId<HealthcareService>>>): JSX.Element {
   return <AppointmentOptionRow label={props.label} detail={formatServiceDetail(props.resource)} />;
 }
 
