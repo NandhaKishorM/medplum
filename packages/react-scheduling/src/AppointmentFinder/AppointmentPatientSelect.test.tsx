@@ -3,11 +3,14 @@
 import type { WithId } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react-hooks';
 import type { RenderResult } from '@testing-library/react';
-import type { JSX, ReactNode } from 'react';
-import { clickAutocompleteOption, typeInAutocomplete } from '../test-utils/asyncAutocomplete';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import {
+  clickAutocompleteOption,
+  installAutocompleteTimers,
+  typeInAutocomplete,
+} from '../test-utils/asyncAutocomplete';
+import { fireEvent, renderWithMedplum, screen } from '../test-utils/render';
+import type { AppointmentPatientSelectProps } from './AppointmentPatientSelect';
 import { AppointmentPatientSelect } from './AppointmentPatientSelect';
 
 const medplum = new MockClient();
@@ -51,15 +54,8 @@ const NED: WithId<Patient> = {
   identifier: [{ type: { coding: [{ system: 'http://example.org/codes', code: 'MR' }] }, value: 'LOCAL-9' }],
 };
 
-function setup(
-  onChange: (patient: WithId<Patient> | undefined) => void,
-  patient?: WithId<Patient>,
-  mrnSystem?: string
-): RenderResult {
-  const wrapper = ({ children }: { children: ReactNode }): JSX.Element => (
-    <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
-  );
-  return render(<AppointmentPatientSelect patient={patient} onChange={onChange} mrnSystem={mrnSystem} />, wrapper);
+function setup(props: Partial<AppointmentPatientSelectProps> = {}): RenderResult {
+  return renderWithMedplum(<AppointmentPatientSelect patient={undefined} onChange={vi.fn()} {...props} />, medplum);
 }
 
 describe('AppointmentPatientSelect', () => {
@@ -70,20 +66,11 @@ describe('AppointmentPatientSelect', () => {
     await medplum.createResource(NED);
   });
 
-  beforeEach(() => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-  });
-
-  afterEach(async () => {
-    await act(async () => {
-      vi.runOnlyPendingTimers();
-    });
-    vi.useRealTimers();
-  });
+  installAutocompleteTimers();
 
   test('Searches by name and reports the patient that was picked', async () => {
     const onChange = vi.fn();
-    setup(onChange);
+    setup({ onChange });
 
     await typeInAutocomplete(screen.getByPlaceholderText('Search by name'), 'Bookworm');
     await clickAutocompleteOption('Homer Bookworm');
@@ -92,7 +79,7 @@ describe('AppointmentPatientSelect', () => {
   });
 
   test('Identifies each match by birth date and MRN, which is how two people with one name are told apart', async () => {
-    setup(vi.fn());
+    setup();
 
     await typeInAutocomplete(screen.getByPlaceholderText('Search by name'), 'Bookworm');
 
@@ -107,7 +94,7 @@ describe('AppointmentPatientSelect', () => {
   });
 
   test('Lists a patient with only one of the two by that one alone', async () => {
-    setup(vi.fn());
+    setup();
 
     await typeInAutocomplete(screen.getByPlaceholderText('Search by name'), 'Bookworm');
 
@@ -117,7 +104,7 @@ describe('AppointmentPatientSelect', () => {
   });
 
   test('Passes over an MR code minted under some other system', async () => {
-    setup(vi.fn());
+    setup();
 
     await typeInAutocomplete(screen.getByPlaceholderText('Search by name'), 'Leftorium');
 
@@ -126,7 +113,7 @@ describe('AppointmentPatientSelect', () => {
   });
 
   test('Reads MRNs from a named system, for a project that does not type them', async () => {
-    setup(vi.fn(), undefined, 'http://example.com/mrn');
+    setup({ mrnSystem: 'http://example.com/mrn' });
 
     await typeInAutocomplete(screen.getByPlaceholderText('Search by name'), 'Bookworm');
 
@@ -134,7 +121,7 @@ describe('AppointmentPatientSelect', () => {
   });
 
   test('Leads with the oldest match', async () => {
-    setup(vi.fn());
+    setup();
 
     await typeInAutocomplete(screen.getByPlaceholderText('Search by name'), 'Bookworm');
     await screen.findByText('Abe Bookworm');
@@ -148,7 +135,7 @@ describe('AppointmentPatientSelect', () => {
   // The field it is given is resolved before the input renders, so the patient
   // carried in appears a tick after mount rather than on the first paint.
   test('Starts on the patient it was given', async () => {
-    setup(vi.fn(), HOMER);
+    setup({ patient: HOMER });
     expect(await screen.findByText('Homer Bookworm')).toBeInTheDocument();
   });
 
@@ -156,7 +143,7 @@ describe('AppointmentPatientSelect', () => {
   // change to a genuinely controlled field is a visible break rather than a silent one.
   test('Holds the patient it mounted with when the prop is reassigned', async () => {
     const onChange = vi.fn();
-    const { rerender } = setup(onChange, HOMER);
+    const { rerender } = setup({ onChange, patient: HOMER });
     await screen.findByText('Homer Bookworm');
 
     rerender(<AppointmentPatientSelect patient={MARGE} onChange={onChange} label="Second patient" />);
@@ -170,7 +157,7 @@ describe('AppointmentPatientSelect', () => {
 
   test('Reports nothing chosen when the patient is cleared', async () => {
     const onChange = vi.fn();
-    setup(onChange, HOMER);
+    setup({ onChange, patient: HOMER });
 
     fireEvent.click(await screen.findByTitle('Clear all'));
 

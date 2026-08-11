@@ -15,6 +15,40 @@ export async function typeInAutocomplete(input: HTMLElement, text: string): Prom
     fireEvent.change(input, { target: { value: text } });
   });
 
+  await settleAutocomplete();
+}
+
+/**
+ * Focuses an autocomplete input and lets its first search resolve, which is how the
+ * options arrive when nothing has been typed.
+ * @param input - The autocomplete input element.
+ */
+export async function focusAutocomplete(input: HTMLElement): Promise<void> {
+  await act(async () => {
+    fireEvent.focus(input);
+  });
+
+  await settleAutocomplete();
+}
+
+/**
+ * Registers the fake timers an autocomplete needs, and drains them afterwards so a
+ * pending debounce cannot fire into the next test.
+ */
+export function installAutocompleteTimers(): void {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(async () => {
+    await act(async () => {
+      vi.runOnlyPendingTimers();
+    });
+    vi.useRealTimers();
+  });
+}
+
+async function settleAutocomplete(): Promise<void> {
   await act(async () => {
     await vi.advanceTimersByTimeAsync(AUTOCOMPLETE_DEBOUNCE_MS);
   });

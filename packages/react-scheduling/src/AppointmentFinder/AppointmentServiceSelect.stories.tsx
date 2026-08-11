@@ -3,41 +3,18 @@
 import { Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { HealthcareService } from '@medplum/fhirtypes';
-import { MockClient } from '@medplum/mock';
 import { Document } from '@medplum/react';
-import { MedplumProvider } from '@medplum/react-hooks';
 import type { Meta } from '@storybook/react';
-import type { JSX, ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
+import { useState } from 'react';
 import { MainClinic, SchedulingFixtures } from '../stories/scheduling';
+import { WithFixtures } from '../stories/WithFixtures';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
 
 export default {
   title: 'Medplum/AppointmentServiceSelect',
   component: AppointmentServiceSelect,
 } as Meta;
-
-/**
- * Renders its children against a client holding the scheduling fixtures.
- *
- * The field searches as it mounts, so the fixtures have to be in place first.
- *
- * @param props - The React props.
- * @param props.children - What to render once the fixtures are in place.
- * @returns The seeded provider.
- */
-function WithServices(props: { readonly children: ReactNode }): JSX.Element | null {
-  const [medplum, setMedplum] = useState<MockClient>();
-
-  useEffect(() => {
-    const client = new MockClient();
-    Promise.all(SchedulingFixtures.map((resource) => client.createResource(resource)))
-      .then(() => setMedplum(client))
-      .catch(console.error);
-  }, []);
-
-  return medplum ? <MedplumProvider medplum={medplum}>{props.children}</MedplumProvider> : null;
-}
 
 /**
  * Visit types are searched on the server, and each is described by its category
@@ -52,14 +29,14 @@ function WithServices(props: { readonly children: ReactNode }): JSX.Element | nu
 export const Basic = (): JSX.Element => {
   const [service, setService] = useState<WithId<HealthcareService>>();
   return (
-    <WithServices>
+    <WithFixtures resources={SchedulingFixtures}>
       <Document>
         <AppointmentServiceSelect service={service} onChange={setService} />
         <Text size="sm" c="dimmed" mt="md">
           {service ? `Chose ${service.id}` : 'Nothing chosen yet'}
         </Text>
       </Document>
-    </WithServices>
+    </WithFixtures>
   );
 };
 
@@ -70,18 +47,18 @@ export const Basic = (): JSX.Element => {
 export const NarrowedToASite = (): JSX.Element => {
   const [service, setService] = useState<WithId<HealthcareService>>();
   return (
-    <WithServices>
+    <WithFixtures resources={SchedulingFixtures}>
       <Document>
         <AppointmentServiceSelect service={service} onChange={setService} location={MainClinic} />
       </Document>
-    </WithServices>
+    </WithFixtures>
   );
 };
 
 export const Disabled = (): JSX.Element => (
-  <WithServices>
+  <WithFixtures resources={SchedulingFixtures}>
     <Document>
       <AppointmentServiceSelect service={undefined} onChange={() => undefined} disabled />
     </Document>
-  </WithServices>
+  </WithFixtures>
 );

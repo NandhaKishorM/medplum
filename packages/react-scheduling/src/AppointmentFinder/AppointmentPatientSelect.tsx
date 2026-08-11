@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Group, Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { formatDate, getIdentifier } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
 import { MultiResourceInput } from '@medplum/react';
 import type { JSX } from 'react';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
+import { AppointmentOptionRow } from './AppointmentOptionRow';
 
 /**
  * How many patients one search offers, and the order they come back in.
@@ -21,6 +21,11 @@ const MRN_TYPE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/v2-0203';
 const MRN_TYPE_CODE = 'MR';
 
 export interface AppointmentPatientSelectProps {
+  /**
+   * The patient the field starts on. Read once, on mount: reassigning it does not move the
+   * field, since `MultiResourceInput` takes it as a `defaultValue`. Every choice after that
+   * is reported through `onChange`.
+   */
   readonly patient: WithId<Patient> | undefined;
   readonly onChange: (patient: WithId<Patient> | undefined) => void;
   readonly label?: string;
@@ -38,7 +43,15 @@ export function AppointmentPatientSelect(props: AppointmentPatientSelectProps): 
   const { patient, onChange, label = 'Patient', error, disabled, mrnSystem } = props;
 
   const handleChange = useCallback((patients: WithId<Patient>[]) => onChange(patients[0]), [onChange]);
-  const itemComponent = useMemo(() => patientItemComponent(mrnSystem), [mrnSystem]);
+
+  // `MultiResourceInput` chooses what to render an option with rather than what to
+  // render it from, so the MRN system has to be closed over.
+  const itemComponent = useCallback(
+    (option: AsyncAutocompleteOption<WithId<Patient>>): JSX.Element => (
+      <AppointmentOptionRow label={option.label} detail={formatPatientDetail(option.resource, mrnSystem)} />
+    ),
+    [mrnSystem]
+  );
 
   return (
     <MultiResourceInput<WithId<Patient>>
@@ -59,48 +72,16 @@ export function AppointmentPatientSelect(props: AppointmentPatientSelectProps): 
 }
 
 /**
- * Binds the MRN system to an option renderer. `MultiResourceInput` chooses what to
- * render an option with rather than what to render it from, so the system has to be
- * closed over; doing that here keeps the component itself out of the render body.
+ * Identifies a patient by the two things the person booking checks against — a birth
+ * date against the caller, an MRN against whatever else is open on the desk.
+ * @param patient - The patient to describe.
  * @param mrnSystem - The system MRNs are issued under, when they are not typed.
- * @returns The renderer for one option.
+ * @returns The birth date and MRN, or whichever of them is on file.
  */
-function patientItemComponent(
-  mrnSystem: string | undefined
-): (props: AsyncAutocompleteOption<WithId<Patient>>) => JSX.Element {
-  return function PatientOption(props: AsyncAutocompleteOption<WithId<Patient>>): JSX.Element {
-    return <PatientItem option={props} mrnSystem={mrnSystem} />;
-  };
-}
-
-/**
- * One patient in the list, named and identified.
- * @param props - The React props.
- * @param props.option - The option to render.
- * @param props.mrnSystem - The system MRNs are issued under, when they are not typed.
- * @returns The row.
- */
-function PatientItem(props: {
-  readonly option: Readonly<AsyncAutocompleteOption<WithId<Patient>>>;
-  readonly mrnSystem: string | undefined;
-}): JSX.Element {
-  const { option, mrnSystem } = props;
-  const { resource } = option;
-  const mrn = getMrn(resource, mrnSystem);
-  const details = [resource.birthDate && `Born ${formatDate(resource.birthDate)}`, mrn && `MRN ${mrn}`].filter(Boolean);
-
-  return (
-    <Group justify="space-between" gap="sm" wrap="nowrap">
-      <Stack gap={0}>
-        <Text size="sm">{option.label}</Text>
-        {details.length > 0 && (
-          <Text size="xs" c="dimmed">
-            {details.join(' · ')}
-          </Text>
-        )}
-      </Stack>
-    </Group>
-  );
+function formatPatientDetail(patient: WithId<Patient>, mrnSystem: string | undefined): string | undefined {
+  const mrn = getMrn(patient, mrnSystem);
+  const parts = [patient.birthDate && `Born ${formatDate(patient.birthDate)}`, mrn && `MRN ${mrn}`].filter(Boolean);
+  return parts.join(' · ') || undefined;
 }
 
 /**

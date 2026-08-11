@@ -1,20 +1,31 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Stack, Text } from '@mantine/core';
+import { Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { getDisplayString, getReferenceString, hasSchedulingParameters } from '@medplum/core';
+import { formatCodeableConcept, getDisplayString, getReferenceString, hasSchedulingParameters } from '@medplum/core';
 import type { HealthcareService, Location } from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
 import { AsyncAutocomplete } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback } from 'react';
-import { getConfiguredDurationMinutes } from './AppointmentFinder.params';
+import { AppointmentOptionRow } from './AppointmentOptionRow';
+import { getServiceDurationMinutes } from './AppointmentServiceSelect.utils';
 
-/** How many visit types are offered at once. */
-const SERVICE_COUNT = 25;
+/**
+ * How many visit types one search offers, and the order they come back in.
+ */
+const SERVICE_SEARCH_CRITERIA = { _count: '25', _sort: 'name' };
 
 export interface AppointmentServiceSelectProps {
+  /**
+   * The visit type the field starts on. Read once, on mount: reassigning it does not move the
+   * field, since `AsyncAutocomplete` takes it as a `defaultValue`. Every choice after that is
+   * reported through `onChange`.
+   *
+   * Note this means a `location` change cannot clear a service the new site does not offer;
+   * remount the field with a `key` if the caller needs that.
+   */
   readonly service: WithId<HealthcareService> | undefined;
   readonly onChange: (service: WithId<HealthcareService> | undefined) => void;
   /** A chosen site, which narrows the services on offer to the ones held there. */
@@ -42,7 +53,7 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
 
   const loadOptions = useCallback(
     async (input: string, signal: AbortSignal): Promise<WithId<HealthcareService>[]> => {
-      const searchParams = new URLSearchParams({ _count: SERVICE_COUNT.toString() });
+      const searchParams = new URLSearchParams(SERVICE_SEARCH_CRITERIA);
       if (input) {
         searchParams.set('name', input);
       }
@@ -51,10 +62,9 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
       }
       const services = await medplum.searchResources('HealthcareService', searchParams, { signal });
       // The scheduling filter is applied here rather than in the search because it
-      // reads an extension, which no search parameter covers.
-      return services
-        .filter(hasSchedulingParameters)
-        .sort((left, right) => getDisplayString(left).localeCompare(getDisplayString(right)));
+      // reads an extension, which no search parameter covers. Ordering stays with
+      // the server via `_sort`, which this filter preserves.
+      return services.filter(hasSchedulingParameters);
     },
     [medplum, locationReference]
   );
@@ -114,23 +124,14 @@ function toOption(service: WithId<HealthcareService>): AsyncAutocompleteOption<W
  * @returns The row.
  */
 function ServiceItem(props: AsyncAutocompleteOption<WithId<HealthcareService>>): JSX.Element {
-  const detail = formatServiceDetail(props.resource);
-
-  return (
-    <Stack gap={0}>
-      <Text size="sm">{props.label}</Text>
-      {detail && (
-        <Text size="xs" c="dimmed">
-          {detail}
-        </Text>
-      )}
-    </Stack>
-  );
+  return <AppointmentOptionRow label={props.label} detail={formatServiceDetail(props.resource)} />;
 }
 
 function formatServiceDetail(service: WithId<HealthcareService>): string | undefined {
-  const category = service.type?.[0]?.text ?? service.type?.[0]?.coding?.[0]?.display;
-  const duration = getConfiguredDurationMinutes(service);
-  const parts = [category, duration ? `${duration} min` : undefined].filter(Boolean);
+  const category = formatCodeableConcept(service.type?.[0]);
+  const duration = getServiceDurationMinutes(service);
+  // `!== undefined` rather than a truthiness check: a zero-minute service is configured,
+  // and reading as if it were not would hide a misconfiguration `$find` will accept.
+  const parts = [category, duration !== undefined ? `${duration} min` : undefined].filter(Boolean);
   return parts.length > 0 ? parts.join(' · ') : undefined;
 }

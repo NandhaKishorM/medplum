@@ -3,12 +3,12 @@
 import { Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { Location } from '@medplum/fhirtypes';
-import { MockClient } from '@medplum/mock';
 import { Document } from '@medplum/react';
-import { MedplumProvider } from '@medplum/react-hooks';
 import type { Meta } from '@storybook/react';
-import type { JSX, ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
+import { useState } from 'react';
+import { MainClinic, SatelliteClinic } from '../stories/scheduling';
+import { WithFixtures } from '../stories/WithFixtures';
 import { AppointmentLocationSelect } from './AppointmentLocationSelect';
 
 export default {
@@ -19,45 +19,15 @@ export default {
 /**
  * Two sites of the same name at different addresses, and a third somewhere else,
  * which is the case the second line of each option exists for.
+ *
+ * Only the clinics are seeded, not the rooms inside them, since a room is not
+ * somewhere an appointment is booked at.
  */
 const SITES: WithId<Location>[] = [
-  {
-    resourceType: 'Location',
-    id: 'main-clinic',
-    name: 'Uro Associates - Main Clinic',
-    address: { city: 'Springfield', state: 'IL' },
-  },
-  {
-    resourceType: 'Location',
-    id: 'main-clinic-north',
-    name: 'Uro Associates - Main Clinic',
-    address: { city: 'Shelbyville', state: 'IL' },
-  },
-  { resourceType: 'Location', id: 'satellite-clinic', name: 'Uro Associates - Satellite' },
+  { ...MainClinic, address: { city: 'Springfield', state: 'IL' } },
+  { ...MainClinic, id: 'main-clinic-north', address: { city: 'Shelbyville', state: 'IL' } },
+  SatelliteClinic,
 ];
-
-/**
- * Renders its children against a client holding the sites above.
- *
- * The field searches the server, so the fixtures have to be in place before it
- * mounts rather than merely before someone types.
- *
- * @param props - The React props.
- * @param props.children - What to render once the sites are in place.
- * @returns The seeded provider.
- */
-function WithSites(props: { readonly children: ReactNode }): JSX.Element | null {
-  const [medplum, setMedplum] = useState<MockClient>();
-
-  useEffect(() => {
-    const client = new MockClient();
-    Promise.all(SITES.map((site) => client.createResource(site)))
-      .then(() => setMedplum(client))
-      .catch(console.error);
-  }, []);
-
-  return medplum ? <MedplumProvider medplum={medplum}>{props.children}</MedplumProvider> : null;
-}
 
 /**
  * Focusing the field offers every site, and typing narrows them, so a practice
@@ -67,14 +37,14 @@ function WithSites(props: { readonly children: ReactNode }): JSX.Element | null 
 export const Basic = (): JSX.Element => {
   const [location, setLocation] = useState<WithId<Location>>();
   return (
-    <WithSites>
+    <WithFixtures resources={SITES}>
       <Document>
         <AppointmentLocationSelect location={location} onChange={setLocation} />
         <Text size="sm" c="dimmed" mt="md">
           {location ? `Chose ${location.id}` : 'Nowhere chosen yet'}
         </Text>
       </Document>
-    </WithSites>
+    </WithFixtures>
   );
 };
 
@@ -85,18 +55,18 @@ export const Basic = (): JSX.Element => {
 export const AlreadyChosen = (): JSX.Element => {
   const [location, setLocation] = useState<WithId<Location> | undefined>(SITES[0]);
   return (
-    <WithSites>
+    <WithFixtures resources={SITES}>
       <Document>
         <AppointmentLocationSelect location={location} onChange={setLocation} />
       </Document>
-    </WithSites>
+    </WithFixtures>
   );
 };
 
 export const Disabled = (): JSX.Element => (
-  <WithSites>
+  <WithFixtures resources={SITES}>
     <Document>
       <AppointmentLocationSelect location={SITES[0]} onChange={() => undefined} disabled />
     </Document>
-  </WithSites>
+  </WithFixtures>
 );
