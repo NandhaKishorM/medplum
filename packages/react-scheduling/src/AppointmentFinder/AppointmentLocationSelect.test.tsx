@@ -11,7 +11,7 @@ import {
   installAutocompleteTimers,
   typeInAutocomplete,
 } from '../test-utils/asyncAutocomplete';
-import { fireEvent, renderWithMedplum, screen } from '../test-utils/render';
+import { fireEvent, renderWithMedplum, screen, waitFor } from '../test-utils/render';
 import type { AppointmentLocationSelectProps } from './AppointmentLocationSelect';
 import { AppointmentLocationSelect } from './AppointmentLocationSelect';
 
@@ -82,21 +82,29 @@ describe('AppointmentLocationSelect', () => {
     expect(await screen.findByText('Uro Associates - Airport')).toBeInTheDocument();
   });
 
-  // Locks the half-controlled contract this field inherits from MultiResourceInput,
-  // so that a later change to a genuinely controlled field is a visible break
-  // rather than a silent one.
-  test('Holds the site it mounted with when the prop is reassigned', async () => {
+  // The caller owns the selection, which makes these two the contract rather than detail: a
+  // field that read `location` only on mount would pass everything else in this file.
+  test('Moves to a site assigned after mount', async () => {
     const onChange = vi.fn();
     const { rerender } = setup({ onChange, location: MainClinic });
     await screen.findByText('Uro Associates - Main Clinic');
 
-    rerender(<AppointmentLocationSelect location={SatelliteClinic} onChange={onChange} label="Second site" />);
+    rerender(<AppointmentLocationSelect location={SatelliteClinic} onChange={onChange} />);
 
-    // The changed label proves the re-render reached the field, so the site
-    // standing still is the contract rather than a no-op.
-    expect(screen.getByText('Second site')).toBeInTheDocument();
-    expect(screen.getByText('Uro Associates - Main Clinic')).toBeInTheDocument();
-    expect(screen.queryByText('Uro Associates - Satellite')).not.toBeInTheDocument();
+    expect(await screen.findByText('Uro Associates - Satellite')).toBeInTheDocument();
+    expect(screen.queryByText('Uro Associates - Main Clinic')).not.toBeInTheDocument();
+  });
+
+  test('Empties when the site is unassigned after mount', async () => {
+    const onChange = vi.fn();
+    const { rerender } = setup({ onChange, location: MainClinic });
+    await screen.findByText('Uro Associates - Main Clinic');
+
+    rerender(<AppointmentLocationSelect location={undefined} onChange={onChange} />);
+
+    await waitFor(() => expect(screen.queryByText('Uro Associates - Main Clinic')).not.toBeInTheDocument());
+    // Clearing from outside is the caller's decision, not a new answer to report back.
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   test('Reports nothing chosen when the site is cleared', async () => {

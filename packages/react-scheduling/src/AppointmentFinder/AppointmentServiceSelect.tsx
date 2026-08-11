@@ -19,12 +19,12 @@ const SERVICE_SEARCH_CRITERIA = { _count: '25', _sort: 'name' };
 
 export interface AppointmentServiceSelectProps {
   /**
-   * The visit type the field starts on. Read once, on mount: reassigning it does not move the
-   * field, since `AsyncAutocomplete` takes it as a `defaultValue`. Every choice after that is
-   * reported through `onChange`.
+   * The visit type the appointment is for. Reassigning it moves the field and clearing it
+   * empties the field, so a caller holding it in state can set, restore or clear the answer.
+   * Every choice the user makes is reported through `onChange`.
    *
-   * Note this means a `location` change cannot clear a service the new site does not offer;
-   * remount the field with a `key` if the caller needs that.
+   * Clearing is what a `location` change needs: the new site may not offer the visit type on
+   * screen, and only the caller knows that it has to go.
    */
   readonly service: WithId<HealthcareService> | undefined;
   readonly onChange: (service: WithId<HealthcareService> | undefined) => void;
@@ -73,6 +73,10 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
 
   return (
     <AsyncAutocomplete<WithId<HealthcareService>>
+      // `AsyncAutocomplete` reads its value once, on mount, so the only way to show a visit
+      // type assigned later is to mount a new one. Keying on the chosen id does that, and
+      // leaves a caller that never reassigns the prop with a key that never moves.
+      key={service?.id ?? 'empty'}
       name="service"
       label={label}
       placeholder="Search visit types"

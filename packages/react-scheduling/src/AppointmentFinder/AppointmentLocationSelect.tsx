@@ -15,9 +15,9 @@ const LOCATION_SEARCH_CRITERIA = { _count: '100', _sort: 'name' };
 
 export interface AppointmentLocationSelectProps {
   /**
-   * The site the field starts on. Read once, on mount: reassigning it does not move the
-   * field, since `MultiResourceInput` takes it as a `defaultValue`. Every choice after that
-   * is reported through `onChange`.
+   * The site the appointment is at. Reassigning it moves the field and clearing it empties
+   * the field, so a caller holding it in state can set, restore or clear the answer. Every
+   * choice the user makes is reported through `onChange`.
    */
   readonly location: WithId<Location> | undefined;
   readonly onChange: (location: WithId<Location> | undefined) => void;
@@ -38,6 +38,10 @@ export function AppointmentLocationSelect(props: AppointmentLocationSelectProps)
 
   return (
     <MultiResourceInput<WithId<Location>>
+      // `MultiResourceInput` reads its value once, on mount, so the only way to show a site
+      // assigned later is to mount a new one. Keying on the chosen id does that, and leaves
+      // a caller that never reassigns the prop with a key that never moves.
+      key={location?.id ?? 'empty'}
       resourceType="Location"
       name="location"
       label={label}

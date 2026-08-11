@@ -22,9 +22,9 @@ const MRN_TYPE_CODE = 'MR';
 
 export interface AppointmentPatientSelectProps {
   /**
-   * The patient the field starts on. Read once, on mount: reassigning it does not move the
-   * field, since `MultiResourceInput` takes it as a `defaultValue`. Every choice after that
-   * is reported through `onChange`.
+   * The patient the appointment is for. Reassigning it moves the field and clearing it
+   * empties the field, so a caller holding it in state can set, restore or clear the answer.
+   * Every choice the user makes is reported through `onChange`.
    */
   readonly patient: WithId<Patient> | undefined;
   readonly onChange: (patient: WithId<Patient> | undefined) => void;
@@ -55,6 +55,10 @@ export function AppointmentPatientSelect(props: AppointmentPatientSelectProps): 
 
   return (
     <MultiResourceInput<WithId<Patient>>
+      // `MultiResourceInput` reads its value once, on mount, so the only way to show a
+      // patient assigned later is to mount a new one. Keying on the chosen id does that, and
+      // leaves a caller that never reassigns the prop with a key that never moves.
+      key={patient?.id ?? 'empty'}
       resourceType="Patient"
       name="patient"
       label={label}

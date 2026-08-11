@@ -9,7 +9,7 @@ import {
   installAutocompleteTimers,
   typeInAutocomplete,
 } from '../test-utils/asyncAutocomplete';
-import { fireEvent, renderWithMedplum, screen } from '../test-utils/render';
+import { fireEvent, renderWithMedplum, screen, waitFor } from '../test-utils/render';
 import type { AppointmentPatientSelectProps } from './AppointmentPatientSelect';
 import { AppointmentPatientSelect } from './AppointmentPatientSelect';
 
@@ -139,20 +139,29 @@ describe('AppointmentPatientSelect', () => {
     expect(await screen.findByText('Homer Bookworm')).toBeInTheDocument();
   });
 
-  // Locks the half-controlled contract documented on the prop, so that a later
-  // change to a genuinely controlled field is a visible break rather than a silent one.
-  test('Holds the patient it mounted with when the prop is reassigned', async () => {
+  // The caller owns the selection, which makes these two the contract rather than detail: a
+  // field that read `patient` only on mount would pass everything else in this file.
+  test('Moves to a patient assigned after mount', async () => {
     const onChange = vi.fn();
     const { rerender } = setup({ onChange, patient: HOMER });
     await screen.findByText('Homer Bookworm');
 
-    rerender(<AppointmentPatientSelect patient={MARGE} onChange={onChange} label="Second patient" />);
+    rerender(<AppointmentPatientSelect patient={MARGE} onChange={onChange} />);
 
-    // The changed label proves the re-render reached the field, so the patient
-    // standing still is the contract rather than a no-op.
-    expect(screen.getByText('Second patient')).toBeInTheDocument();
-    expect(screen.getByText('Homer Bookworm')).toBeInTheDocument();
-    expect(screen.queryByText('Marge Bookworm')).not.toBeInTheDocument();
+    expect(await screen.findByText('Marge Bookworm')).toBeInTheDocument();
+    expect(screen.queryByText('Homer Bookworm')).not.toBeInTheDocument();
+  });
+
+  test('Empties when the patient is unassigned after mount', async () => {
+    const onChange = vi.fn();
+    const { rerender } = setup({ onChange, patient: HOMER });
+    await screen.findByText('Homer Bookworm');
+
+    rerender(<AppointmentPatientSelect patient={undefined} onChange={onChange} />);
+
+    await waitFor(() => expect(screen.queryByText('Homer Bookworm')).not.toBeInTheDocument());
+    // Clearing from outside is the caller's decision, not a new answer to report back.
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   test('Reports nothing chosen when the patient is cleared', async () => {
