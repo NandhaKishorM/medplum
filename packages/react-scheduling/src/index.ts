@@ -9,6 +9,7 @@ export * from './AppointmentFinder/AppointmentFinder.roles';
 export * from './AppointmentFinder/AppointmentFinder.times';
 export * from './AppointmentFinder/AppointmentLocationSelect';
 export * from './AppointmentFinder/AppointmentPatientSelect';
+export * from './AppointmentFinder/AppointmentServiceSelect';
 export * from './AppointmentFinder/AppointmentSlotGroupCard';
 export * from './Calendar/Calendar';
 export * from './ScheduleAvailabilityEditor/ScheduleAvailabilityEditor';
