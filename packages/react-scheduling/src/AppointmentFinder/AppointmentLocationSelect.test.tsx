@@ -4,31 +4,34 @@ import type { WithId } from '@medplum/core';
 import type { Location } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
+import type { RenderResult } from '@testing-library/react';
 import type { JSX, ReactNode } from 'react';
-import { MainClinic, SatelliteClinic, SchedulingFixtures } from '../stories/scheduling';
+import { clickAutocompleteOption, typeInAutocomplete } from '../test-utils/asyncAutocomplete';
 import { act, fireEvent, render, screen } from '../test-utils/render';
+import { MainClinic, SatelliteClinic, SchedulingFixtures } from '../stories/scheduling';
 import { AppointmentLocationSelect } from './AppointmentLocationSelect';
 
 const medplum = new MockClient();
 
-function setup(onChange: (location: WithId<Location> | undefined) => void, location?: WithId<Location>): void {
+function setup(onChange: (location: WithId<Location> | undefined) => void, location?: WithId<Location>): RenderResult {
   const wrapper = ({ children }: { children: ReactNode }): JSX.Element => (
     <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
   );
-  render(<AppointmentLocationSelect location={location} onChange={onChange} />, wrapper);
+  return render(<AppointmentLocationSelect location={location} onChange={onChange} />, wrapper);
 }
 
 /**
- * Waits for the sites to load, then opens the list.
+ * Focuses the field and lets its first search resolve, which is how the sites
+ * arrive when nothing has been typed.
  * @returns The field's input, for typing into.
  */
 async function openList(): Promise<HTMLElement> {
-  const input = await screen.findByRole('textbox');
+  const input = screen.getByPlaceholderText('Search sites');
   await act(async () => {
-    expect(input).toBeEnabled();
+    fireEvent.focus(input);
   });
   await act(async () => {
-    fireEvent.click(input);
+    await vi.advanceTimersByTimeAsync(1000);
   });
   return input;
 }
@@ -40,21 +43,33 @@ describe('AppointmentLocationSelect', () => {
     }
   });
 
-  test('Offers every site', async () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+  });
+
+  afterEach(async () => {
+    await act(async () => {
+      vi.runOnlyPendingTimers();
+    });
+    vi.useRealTimers();
+  });
+
+  test('Offers the sites without anything being typed', async () => {
     setup(vi.fn());
     await openList();
 
-    expect(screen.getByText('Uro Associates - Main Clinic')).toBeInTheDocument();
+    expect(await screen.findByText('Uro Associates - Main Clinic')).toBeInTheDocument();
     expect(screen.getByText('Uro Associates - Satellite')).toBeInTheDocument();
   });
 
-  test('Asks for every site at once, so the whole set is there to be typed against', async () => {
+  test('Asks for every site at once, so focusing the field shows the whole set', async () => {
     const searchResources = vi.spyOn(medplum, 'searchResources');
     setup(vi.fn());
     await openList();
 
-    const call = searchResources.mock.calls.at(-1);
-    expect(call?.[1]).toStrictEqual({ _count: 100, _sort: 'name' });
+    const params = searchResources.mock.calls.at(-1)?.[1] as URLSearchParams;
+    expect(params.get('_count')).toBe('100');
+    expect(params.get('_sort')).toBe('name');
     searchResources.mockRestore();
   });
 
@@ -63,49 +78,73 @@ describe('AppointmentLocationSelect', () => {
     setup(onChange);
     await openList();
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Uro Associates - Main Clinic'));
-    });
+    await clickAutocompleteOption('Uro Associates - Main Clinic');
 
-    expect(onChange).toHaveBeenCalled();
-    expect((onChange.mock.calls[0][0] as WithId<Location>).id).toBe('main-clinic');
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ id: 'main-clinic' }));
   });
 
-  test('Shows the location already chosen', async () => {
+  test('Starts on the site it was given', async () => {
     setup(vi.fn(), MainClinic);
-    expect(await screen.findByDisplayValue('Uro Associates - Main Clinic')).toBeInTheDocument();
+    expect(await screen.findByText('Uro Associates - Main Clinic')).toBeInTheDocument();
   });
 
-  test('Keeps a chosen site on the list even when it was not among those loaded', async () => {
+  test('Shows a chosen site that no search would return', async () => {
     const elsewhere: WithId<Location> = { ...SatelliteClinic, id: 'not-loaded', name: 'Uro Associates - Airport' };
     setup(vi.fn(), elsewhere);
 
     // What is chosen has to stay visible, or the field reads as if nothing is.
-    expect(await screen.findByDisplayValue('Uro Associates - Airport')).toBeInTheDocument();
+    expect(await screen.findByText('Uro Associates - Airport')).toBeInTheDocument();
+  });
+
+  // Locks the half-controlled contract this field inherits from MultiResourceInput,
+  // so that a later change to a genuinely controlled field is a visible break
+  // rather than a silent one.
+  test('Holds the site it mounted with when the prop is reassigned', async () => {
+    const onChange = vi.fn();
+    const { rerender } = setup(onChange, MainClinic);
+    await screen.findByText('Uro Associates - Main Clinic');
+
+    rerender(<AppointmentLocationSelect location={SatelliteClinic} onChange={onChange} label="Second site" />);
+
+    // The changed label proves the re-render reached the field, so the site
+    // standing still is the contract rather than a no-op.
+    expect(screen.getByText('Second site')).toBeInTheDocument();
+    expect(screen.getByText('Uro Associates - Main Clinic')).toBeInTheDocument();
+    expect(screen.queryByText('Uro Associates - Satellite')).not.toBeInTheDocument();
+  });
+
+  test('Reports nothing chosen when the site is cleared', async () => {
+    const onChange = vi.fn();
+    setup(onChange, MainClinic);
+
+    fireEvent.click(await screen.findByTitle('Clear all'));
+
+    expect(onChange).toHaveBeenCalledWith(undefined);
   });
 
   test('Narrows the list as the user types', async () => {
     setup(vi.fn());
     const input = await openList();
 
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Satellite' } });
-    });
+    await typeInAutocomplete(input, 'Satellite');
 
-    expect(screen.getByText('Uro Associates - Satellite')).toBeInTheDocument();
+    expect(await screen.findByText('Uro Associates - Satellite')).toBeInTheDocument();
     expect(screen.queryByText('Uro Associates - Main Clinic')).not.toBeInTheDocument();
   });
 
   test('Says where a site is, for telling two of the same name apart', async () => {
     const addressed: WithId<Location> = {
-      ...SatelliteClinic,
+      resourceType: 'Location',
       id: 'addressed',
       name: 'Uro Associates - Downtown',
       address: { city: 'Springfield', state: 'IL' },
     };
-    setup(vi.fn(), addressed);
-    await openList();
+    await medplum.createResource(addressed);
+    setup(vi.fn());
+    const input = await openList();
 
-    expect(screen.getByText('Springfield, IL')).toBeInTheDocument();
+    await typeInAutocomplete(input, 'Downtown');
+
+    expect(await screen.findByText('Springfield, IL')).toBeInTheDocument();
   });
 });

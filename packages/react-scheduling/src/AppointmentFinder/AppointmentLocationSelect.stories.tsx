@@ -39,8 +39,8 @@ const SITES: WithId<Location>[] = [
 /**
  * Renders its children against a client holding the sites above.
  *
- * The field asks the server for every site as it mounts, so the fixtures have to
- * be in place before it does.
+ * The field searches the server, so the fixtures have to be in place before it
+ * mounts rather than merely before someone types.
  *
  * @param props - The React props.
  * @param props.children - What to render once the sites are in place.
@@ -60,8 +60,8 @@ function WithSites(props: { readonly children: ReactNode }): JSX.Element | null 
 }
 
 /**
- * Every site is loaded at once and typing narrows them, so a practice with more
- * sites than fit on screen is still answered in one field.
+ * Focusing the field offers every site, and typing narrows them, so a practice
+ * with more sites than fit on screen is still answered in one field.
  * @returns The story.
  */
 export const Basic = (): JSX.Element => {
