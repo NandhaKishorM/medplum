@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { formatCodeableConcept, getDisplayString, getReferenceString, hasSchedulingParameters } from '@medplum/core';
 import type { HealthcareService, Location } from '@medplum/fhirtypes';
@@ -89,28 +88,8 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
       toOption={toOption}
       loadOptions={loadOptions}
       itemComponent={ServiceItem}
-      emptyComponent={ServiceEmpty}
       onChange={handleChange}
     />
-  );
-}
-
-/**
- * Says why the list is empty.
- *
- * A search that matches nothing and a practice with nothing schedulable are
- * different dead ends, and the second one is a configuration problem rather than
- * a typo.
- *
- * @param props - The React props.
- * @param props.search - What was searched for, empty when nothing was typed.
- * @returns The message.
- */
-function ServiceEmpty(props: { readonly search: string }): JSX.Element {
-  return (
-    <Text size="sm" c="dimmed" p="xs">
-      {props.search ? 'No visit types match this search.' : 'No schedulable visit types found.'}
-    </Text>
   );
 }
 

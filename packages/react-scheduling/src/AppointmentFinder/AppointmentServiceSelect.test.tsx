@@ -41,14 +41,19 @@ describe('AppointmentServiceSelect', () => {
   installAutocompleteTimers();
 
   test('Only offers services configured for scheduling', async () => {
+    const searchResources = vi.spyOn(medplum, 'searchResources');
     setup();
 
     await typeInAutocomplete(searchBox(), 'Clinic');
 
-    // "Walk-in Clinic" matches the search but has no SchedulingParameters, so
-    // $find could never produce times for it.
+    // "Walk-in Clinic" has no SchedulingParameters, so $find could never produce times
+    // for it. Checking that the server did return it is what makes its absence below
+    // evidence of the filter rather than of a search that had not resolved yet.
+    const index = searchResources.mock.calls.findIndex((call) => call[0] === 'HealthcareService');
+    const returned = (await searchResources.mock.results[index].value) as HealthcareService[];
+    expect(returned.map((service) => service.name)).toContain('Walk-in Clinic');
     expect(screen.queryByText('Walk-in Clinic')).not.toBeInTheDocument();
-    expect(await screen.findByText('No visit types match this search.')).toBeInTheDocument();
+    searchResources.mockRestore();
   });
 
   test('Says how long each visit type takes', async () => {
