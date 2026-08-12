@@ -12,11 +12,6 @@ export interface AppointmentOptionRowProps {
 /**
  * One option in an appointment pick list: what it is called, over what tells it
  * apart from the others.
- *
- * Shared by the patient, location and visit type fields so that a dropdown row
- * reads the same whichever of them is being filled in — the second line differs
- * by resource type, the shape of the row does not.
- *
  * @param props - The React props.
  * @returns The row.
  */
