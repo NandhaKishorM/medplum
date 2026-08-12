@@ -48,7 +48,11 @@ export function installAutocompleteTimers(): void {
   });
 }
 
-async function settleAutocomplete(): Promise<void> {
+/**
+ * Drains the debounce and the promises behind it, so anything the last render kicked off
+ * has landed. Use it before asserting that something did *not* happen.
+ */
+export async function settleAutocomplete(): Promise<void> {
   await act(async () => {
     await vi.advanceTimersByTimeAsync(AUTOCOMPLETE_DEBOUNCE_MS);
   });

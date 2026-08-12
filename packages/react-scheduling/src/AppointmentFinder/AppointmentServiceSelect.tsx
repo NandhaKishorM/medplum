@@ -18,14 +18,15 @@ const SERVICE_SEARCH_CRITERIA = { _count: '25', _sort: 'name' };
 
 export interface AppointmentServiceSelectProps {
   /**
-   * The visit type the appointment is for. Reassigning it moves the field and clearing it
-   * empties the field, so a caller holding it in state can set, restore or clear the answer.
-   * Every choice the user makes is reported through `onChange`.
+   * The visit type the field starts on, read once when it mounts. Reassigning it afterwards
+   * is ignored; a caller that has to move or clear the field from outside should key this
+   * component on its own selection, which mounts a fresh field on the new value.
    *
-   * Clearing is what a `location` change needs: the new site may not offer the visit type on
-   * screen, and only the caller knows that it has to go.
+   * Clearing is what a `location` change needs — the new site may not offer the visit type
+   * on screen, and only the caller knows it has to go — so a caller that lets the site
+   * change is the one that has to key this field.
    */
-  readonly service: WithId<HealthcareService> | undefined;
+  readonly defaultValue?: WithId<HealthcareService>;
   readonly onChange: (service: WithId<HealthcareService> | undefined) => void;
   /** A chosen site, which narrows the services on offer to the ones held there. */
   readonly location?: WithId<Location>;
@@ -45,7 +46,7 @@ export interface AppointmentServiceSelectProps {
  * @returns The service field.
  */
 export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): JSX.Element {
-  const { location, service, onChange, label = 'Service type', error, disabled } = props;
+  const { location, defaultValue, onChange, label = 'Service type', error, disabled } = props;
   const medplum = useMedplum();
 
   const locationReference = location && getReferenceString(location);
@@ -72,9 +73,6 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
 
   return (
     <AsyncAutocomplete<WithId<HealthcareService>>
-      // `AsyncAutocomplete` reads its value once, on mount. Keying on the selection
-      // remounts it, which is the only way to show a visit type the caller assigns later.
-      key={service?.id ?? 'empty'}
       name="service"
       label={label}
       placeholder="Search visit types"
@@ -83,7 +81,7 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
       maxValues={1}
       error={error}
       disabled={disabled}
-      defaultValue={service}
+      defaultValue={defaultValue}
       toOption={toOption}
       loadOptions={loadOptions}
       itemComponent={ServiceItem}

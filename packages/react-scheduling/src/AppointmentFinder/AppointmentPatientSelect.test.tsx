@@ -7,6 +7,7 @@ import type { RenderResult } from '@testing-library/react';
 import {
   clickAutocompleteOption,
   installAutocompleteTimers,
+  settleAutocomplete,
   typeInAutocomplete,
 } from '../test-utils/asyncAutocomplete';
 import { fireEvent, renderWithMedplum, screen, waitFor } from '../test-utils/render';
@@ -54,8 +55,8 @@ const NED: WithId<Patient> = {
   identifier: [{ type: { coding: [{ system: 'http://example.org/codes', code: 'MR' }] }, value: 'LOCAL-9' }],
 };
 
-function setup(props: Partial<AppointmentPatientSelectProps> = {}): RenderResult {
-  return renderWithMedplum(<AppointmentPatientSelect patient={undefined} onChange={vi.fn()} {...props} />, medplum);
+function setup(props: Partial<AppointmentPatientSelectProps> = {}, key?: string): RenderResult {
+  return renderWithMedplum(<AppointmentPatientSelect key={key} onChange={vi.fn()} {...props} />, medplum);
 }
 
 describe('AppointmentPatientSelect', () => {
@@ -135,38 +136,51 @@ describe('AppointmentPatientSelect', () => {
   // The field it is given is resolved before the input renders, so the patient
   // carried in appears a tick after mount rather than on the first paint.
   test('Starts on the patient it was given', async () => {
-    setup({ patient: HOMER });
+    setup({ defaultValue: HOMER });
     expect(await screen.findByText('Homer Bookworm')).toBeInTheDocument();
   });
 
-  // The caller owns the selection, which makes these two the contract rather than detail: a
-  // field that read `patient` only on mount would pass everything else in this file.
-  test('Moves to a patient assigned after mount', async () => {
+  // The field is uncontrolled, so moving it from outside is the caller's job and the key
+  // is how it is done. These two cover the pattern callers are told to follow.
+  test('Moves to a patient the caller keys it onto', async () => {
     const onChange = vi.fn();
-    const { rerender } = setup({ onChange, patient: HOMER });
+    const { rerender } = setup({ onChange, defaultValue: HOMER }, HOMER.id);
     await screen.findByText('Homer Bookworm');
 
-    rerender(<AppointmentPatientSelect patient={MARGE} onChange={onChange} />);
+    rerender(<AppointmentPatientSelect key={MARGE.id} defaultValue={MARGE} onChange={onChange} />);
 
     expect(await screen.findByText('Marge Bookworm')).toBeInTheDocument();
     expect(screen.queryByText('Homer Bookworm')).not.toBeInTheDocument();
   });
 
-  test('Empties when the patient is unassigned after mount', async () => {
+  test('Empties when the caller keys it onto no patient', async () => {
     const onChange = vi.fn();
-    const { rerender } = setup({ onChange, patient: HOMER });
+    const { rerender } = setup({ onChange, defaultValue: HOMER }, HOMER.id);
     await screen.findByText('Homer Bookworm');
 
-    rerender(<AppointmentPatientSelect patient={undefined} onChange={onChange} />);
+    rerender(<AppointmentPatientSelect key="empty" defaultValue={undefined} onChange={onChange} />);
 
     await waitFor(() => expect(screen.queryByText('Homer Bookworm')).not.toBeInTheDocument());
     // Clearing from outside is the caller's decision, not a new answer to report back.
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  test('Ignores a patient reassigned without a new key', async () => {
+    const onChange = vi.fn();
+    const { rerender } = setup({ onChange, defaultValue: HOMER });
+    await screen.findByText('Homer Bookworm');
+
+    rerender(<AppointmentPatientSelect defaultValue={MARGE} onChange={onChange} />);
+    await settleAutocomplete();
+
+    // The contract the prop name promises: read once, at mount.
+    expect(screen.getByText('Homer Bookworm')).toBeInTheDocument();
+    expect(screen.queryByText('Marge Bookworm')).not.toBeInTheDocument();
+  });
+
   test('Reports nothing chosen when the patient is cleared', async () => {
     const onChange = vi.fn();
-    setup({ onChange, patient: HOMER });
+    setup({ onChange, defaultValue: HOMER });
 
     fireEvent.click(await screen.findByTitle('Clear all'));
 

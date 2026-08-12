@@ -8,6 +8,7 @@ import { MainClinic, SatelliteClinic, SchedulingFixtures, UltrasoundImagingServi
 import {
   clickAutocompleteOption,
   installAutocompleteTimers,
+  settleAutocomplete,
   typeInAutocomplete,
 } from '../test-utils/asyncAutocomplete';
 import { renderWithMedplum, screen, waitFor } from '../test-utils/render';
@@ -23,8 +24,8 @@ const BARIATRIC_SURGERY: WithId<HealthcareService> = {
   name: 'Bariatric Surgery',
 };
 
-function setup(props: Partial<AppointmentServiceSelectProps> = {}): RenderResult {
-  return renderWithMedplum(<AppointmentServiceSelect service={undefined} onChange={vi.fn()} {...props} />, medplum);
+function setup(props: Partial<AppointmentServiceSelectProps> = {}, key?: string): RenderResult {
+  return renderWithMedplum(<AppointmentServiceSelect key={key} onChange={vi.fn()} {...props} />, medplum);
 }
 
 function searchBox(): HTMLElement {
@@ -99,34 +100,54 @@ describe('AppointmentServiceSelect', () => {
   });
 
   test('Starts on the visit type it was given', async () => {
-    setup({ service: UltrasoundImagingService });
+    setup({ defaultValue: UltrasoundImagingService });
     expect(await screen.findByText('Ultrasound Imaging')).toBeInTheDocument();
   });
 
-  // The caller owns the selection, which makes these two the contract rather than detail: a
-  // field that read `service` only on mount would pass everything else in this file.
-  test('Moves to a visit type assigned after mount', async () => {
+  // The field is uncontrolled, so moving it from outside is the caller's job and the key
+  // is how it is done. These cover the pattern callers are told to follow.
+  test('Moves to a visit type the caller keys it onto', async () => {
     const onChange = vi.fn();
-    const { rerender } = setup({ onChange, service: UltrasoundImagingService });
+    const { rerender } = setup({ onChange, defaultValue: UltrasoundImagingService }, UltrasoundImagingService.id);
     await screen.findByText('Ultrasound Imaging');
 
-    rerender(<AppointmentServiceSelect service={BARIATRIC_SURGERY} onChange={onChange} />);
+    rerender(
+      <AppointmentServiceSelect key={BARIATRIC_SURGERY.id} defaultValue={BARIATRIC_SURGERY} onChange={onChange} />
+    );
 
     expect(await screen.findByText('Bariatric Surgery')).toBeInTheDocument();
     expect(screen.queryByText('Ultrasound Imaging')).not.toBeInTheDocument();
   });
 
-  // The reason the field has to clear: a site change can invalidate the visit type on screen,
-  // and only the caller knows it has to go.
-  test('Empties when the visit type is unassigned after a location change', async () => {
+  // The reason a caller has to key this field: a site change can invalidate the visit type
+  // on screen, and only the caller knows it has to go.
+  test('Empties when a location change keys it onto no visit type', async () => {
     const onChange = vi.fn();
-    const { rerender } = setup({ onChange, service: UltrasoundImagingService, location: MainClinic });
+    const { rerender } = setup(
+      { onChange, defaultValue: UltrasoundImagingService, location: MainClinic },
+      UltrasoundImagingService.id
+    );
     await screen.findByText('Ultrasound Imaging');
 
-    rerender(<AppointmentServiceSelect service={undefined} onChange={onChange} location={SatelliteClinic} />);
+    rerender(
+      <AppointmentServiceSelect key="empty" defaultValue={undefined} onChange={onChange} location={SatelliteClinic} />
+    );
 
     await waitFor(() => expect(screen.queryByText('Ultrasound Imaging')).not.toBeInTheDocument());
     // Clearing from outside is the caller's decision, not a new answer to report back.
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  test('Ignores a visit type reassigned without a new key', async () => {
+    const onChange = vi.fn();
+    const { rerender } = setup({ onChange, defaultValue: UltrasoundImagingService });
+    await screen.findByText('Ultrasound Imaging');
+
+    rerender(<AppointmentServiceSelect defaultValue={BARIATRIC_SURGERY} onChange={onChange} />);
+    await settleAutocomplete();
+
+    // The contract the prop name promises: read once, at mount.
+    expect(screen.getByText('Ultrasound Imaging')).toBeInTheDocument();
+    expect(screen.queryByText('Bariatric Surgery')).not.toBeInTheDocument();
   });
 });

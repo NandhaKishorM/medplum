@@ -22,11 +22,11 @@ const MRN_TYPE_CODE = 'MR';
 
 export interface AppointmentPatientSelectProps {
   /**
-   * The patient the appointment is for. Reassigning it moves the field and clearing it
-   * empties the field, so a caller holding it in state can set, restore or clear the answer.
-   * Every choice the user makes is reported through `onChange`.
+   * The patient the field starts on, read once when it mounts. Reassigning it afterwards is
+   * ignored; a caller that has to move or clear the field from outside should key this
+   * component on its own selection, which mounts a fresh field on the new value.
    */
-  readonly patient: WithId<Patient> | undefined;
+  readonly defaultValue?: WithId<Patient>;
   readonly onChange: (patient: WithId<Patient> | undefined) => void;
   readonly label?: string;
   readonly error?: string;
@@ -40,7 +40,7 @@ export interface AppointmentPatientSelectProps {
  * @returns The patient field.
  */
 export function AppointmentPatientSelect(props: AppointmentPatientSelectProps): JSX.Element {
-  const { patient, onChange, label = 'Patient', error, disabled, mrnSystem } = props;
+  const { defaultValue, onChange, label = 'Patient', error, disabled, mrnSystem } = props;
 
   const handleChange = useCallback((patients: WithId<Patient>[]) => onChange(patients[0]), [onChange]);
 
@@ -53,8 +53,10 @@ export function AppointmentPatientSelect(props: AppointmentPatientSelectProps): 
   );
 
   return (
+    // `MultiResourceInput` rather than `ResourceInput`, which its siblings use: an
+    // appointment may need to carry more than one patient, and raising `maxValues` is
+    // the whole change when it does.
     <MultiResourceInput<WithId<Patient>>
-      key={patient?.id ?? 'empty'}
       resourceType="Patient"
       name="patient"
       label={label}
@@ -63,7 +65,7 @@ export function AppointmentPatientSelect(props: AppointmentPatientSelectProps): 
       maxValues={1}
       error={error}
       disabled={disabled}
-      defaultValue={patient ? [patient] : undefined}
+      defaultValue={defaultValue ? [defaultValue] : undefined}
       searchCriteria={PATIENT_SEARCH_CRITERIA}
       itemComponent={itemComponent}
       onChange={handleChange}

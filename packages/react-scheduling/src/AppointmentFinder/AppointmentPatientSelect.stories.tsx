@@ -30,7 +30,7 @@ export const Basic = (): JSX.Element => {
   const [patient, setPatient] = useState<WithId<Patient>>();
   return (
     <Document>
-      <AppointmentPatientSelect patient={patient} onChange={setPatient} />
+      <AppointmentPatientSelect onChange={setPatient} />
       <Text size="sm" c="dimmed" mt="md">
         {patient ? `Chose ${patient.id}` : 'Nobody chosen yet'}
       </Text>
@@ -42,26 +42,20 @@ export const Basic = (): JSX.Element => {
  * A patient carried in from elsewhere, such as the chart the booking started from.
  * @returns The story.
  */
-export const AlreadyChosen = (): JSX.Element => {
-  const [patient, setPatient] = useState<WithId<Patient> | undefined>(HOMER);
-  return (
-    <Document>
-      <AppointmentPatientSelect patient={patient} onChange={setPatient} />
-    </Document>
-  );
-};
+export const AlreadyChosen = (): JSX.Element => (
+  <Document>
+    <AppointmentPatientSelect defaultValue={HOMER} onChange={() => undefined} />
+  </Document>
+);
 
-export const WithError = (): JSX.Element => {
-  const [patient, setPatient] = useState<WithId<Patient>>();
-  return (
-    <Document>
-      <AppointmentPatientSelect patient={patient} onChange={setPatient} error="Choose a patient" />
-    </Document>
-  );
-};
+export const WithError = (): JSX.Element => (
+  <Document>
+    <AppointmentPatientSelect onChange={() => undefined} error="Choose a patient" />
+  </Document>
+);
 
 export const Disabled = (): JSX.Element => (
   <Document>
-    <AppointmentPatientSelect patient={HOMER} onChange={() => undefined} disabled />
+    <AppointmentPatientSelect defaultValue={HOMER} onChange={() => undefined} disabled />
   </Document>
 );

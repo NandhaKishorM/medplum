@@ -14,11 +14,11 @@ const LOCATION_SEARCH_CRITERIA = { _count: '100', _sort: 'name' };
 
 export interface AppointmentLocationSelectProps {
   /**
-   * The site the appointment is at. Reassigning it moves the field and clearing it empties
-   * the field, so a caller holding it in state can set, restore or clear the answer. Every
-   * choice the user makes is reported through `onChange`.
+   * The site the field starts on, read once when it mounts. Reassigning it afterwards is
+   * ignored; a caller that has to move or clear the field from outside should key this
+   * component on its own selection, which mounts a fresh field on the new value.
    */
-  readonly location: WithId<Location> | undefined;
+  readonly defaultValue?: WithId<Location>;
   readonly onChange: (location: WithId<Location> | undefined) => void;
   readonly label?: string;
   readonly error?: string;
@@ -31,11 +31,10 @@ export interface AppointmentLocationSelectProps {
  * @returns The location field.
  */
 export function AppointmentLocationSelect(props: AppointmentLocationSelectProps): JSX.Element {
-  const { location, onChange, label = 'Location', error, disabled } = props;
+  const { defaultValue, onChange, label = 'Location', error, disabled } = props;
 
   return (
     <ResourceInput<WithId<Location>>
-      key={location?.id ?? 'empty'}
       resourceType="Location"
       name="location"
       label={label}
@@ -43,7 +42,7 @@ export function AppointmentLocationSelect(props: AppointmentLocationSelectProps)
       required
       error={error}
       disabled={disabled}
-      defaultValue={location}
+      defaultValue={defaultValue}
       searchCriteria={LOCATION_SEARCH_CRITERIA}
       itemComponent={LocationItem}
       onChange={onChange}

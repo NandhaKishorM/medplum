@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Text } from '@mantine/core';
+import { Button, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { Location } from '@medplum/fhirtypes';
 import { Document } from '@medplum/react';
@@ -39,7 +39,7 @@ export const Basic = (): JSX.Element => {
   const [location, setLocation] = useState<WithId<Location>>();
   return (
     <Document>
-      <AppointmentLocationSelect location={location} onChange={setLocation} />
+      <AppointmentLocationSelect onChange={setLocation} />
       <Text size="sm" c="dimmed" mt="md">
         {location ? `Chose ${location.id}` : 'Nowhere chosen yet'}
       </Text>
@@ -51,17 +51,31 @@ export const Basic = (): JSX.Element => {
  * A site carried in from elsewhere, such as the clinic the booking started at.
  * @returns The story.
  */
-export const AlreadyChosen = (): JSX.Element => {
+export const AlreadyChosen = (): JSX.Element => (
+  <Document>
+    <AppointmentLocationSelect defaultValue={SITES[0]} onChange={() => undefined} />
+  </Document>
+);
+
+/**
+ * The field reads `defaultValue` once, so a caller that has to move it from outside
+ * keys it on the selection. Here the button assigns a site the user did not pick.
+ * @returns The story.
+ */
+export const MovedByTheCaller = (): JSX.Element => {
   const [location, setLocation] = useState<WithId<Location> | undefined>(SITES[0]);
   return (
     <Document>
-      <AppointmentLocationSelect location={location} onChange={setLocation} />
+      <AppointmentLocationSelect key={location?.id ?? 'empty'} defaultValue={location} onChange={setLocation} />
+      <Button mt="md" onClick={() => setLocation(location?.id === SITES[0].id ? SITES[2] : SITES[0])}>
+        Move it elsewhere
+      </Button>
     </Document>
   );
 };
 
 export const Disabled = (): JSX.Element => (
   <Document>
-    <AppointmentLocationSelect location={SITES[0]} onChange={() => undefined} disabled />
+    <AppointmentLocationSelect defaultValue={SITES[0]} onChange={() => undefined} disabled />
   </Document>
 );
