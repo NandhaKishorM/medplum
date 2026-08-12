@@ -44,8 +44,7 @@ export function AppointmentPatientSelect(props: AppointmentPatientSelectProps): 
 
   const handleChange = useCallback((patients: WithId<Patient>[]) => onChange(patients[0]), [onChange]);
 
-  // `MultiResourceInput` chooses what to render an option with rather than what to
-  // render it from, so the MRN system has to be closed over.
+  // `itemComponent` takes no props beyond the option, so `mrnSystem` has to be closed over.
   const itemComponent = useCallback(
     (option: AsyncAutocompleteOption<WithId<Patient>>): JSX.Element => (
       <AppointmentOptionRow label={option.label} detail={formatPatientDetail(option.resource, mrnSystem)} />
@@ -55,9 +54,8 @@ export function AppointmentPatientSelect(props: AppointmentPatientSelectProps): 
 
   return (
     <MultiResourceInput<WithId<Patient>>
-      // `MultiResourceInput` reads its value once, on mount, so the only way to show a
-      // patient assigned later is to mount a new one. Keying on the chosen id does that, and
-      // leaves a caller that never reassigns the prop with a key that never moves.
+      // `MultiResourceInput` reads its value once, on mount. Keying on the selection
+      // remounts it, which is the only way to show a patient the caller assigns later.
       key={patient?.id ?? 'empty'}
       resourceType="Patient"
       name="patient"

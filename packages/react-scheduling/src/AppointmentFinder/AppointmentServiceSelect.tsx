@@ -72,9 +72,8 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
 
   return (
     <AsyncAutocomplete<WithId<HealthcareService>>
-      // `AsyncAutocomplete` reads its value once, on mount, so the only way to show a visit
-      // type assigned later is to mount a new one. Keying on the chosen id does that, and
-      // leaves a caller that never reassigns the prop with a key that never moves.
+      // `AsyncAutocomplete` reads its value once, on mount. Keying on the selection
+      // remounts it, which is the only way to show a visit type the caller assigns later.
       key={service?.id ?? 'empty'}
       name="service"
       label={label}
@@ -116,5 +115,5 @@ function formatServiceDetail(service: WithId<HealthcareService>): string | undef
   // `!== undefined` rather than a truthiness check: a zero-minute service is configured,
   // and reading as if it were not would hide a misconfiguration `$find` will accept.
   const parts = [category, duration !== undefined ? `${duration} min` : undefined].filter(Boolean);
-  return parts.length > 0 ? parts.join(' · ') : undefined;
+  return parts.join(' · ') || undefined;
 }

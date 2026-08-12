@@ -38,9 +38,8 @@ export function AppointmentLocationSelect(props: AppointmentLocationSelectProps)
 
   return (
     <MultiResourceInput<WithId<Location>>
-      // `MultiResourceInput` reads its value once, on mount, so the only way to show a site
-      // assigned later is to mount a new one. Keying on the chosen id does that, and leaves
-      // a caller that never reassigns the prop with a key that never moves.
+      // `MultiResourceInput` reads its value once, on mount. Keying on the selection
+      // remounts it, which is the only way to show a site the caller assigns later.
       key={location?.id ?? 'empty'}
       resourceType="Location"
       name="location"
