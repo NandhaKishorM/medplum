@@ -3,9 +3,8 @@
 import type { WithId } from '@medplum/core';
 import type { Location } from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
-import { MultiResourceInput } from '@medplum/react';
+import { ResourceInput } from '@medplum/react';
 import type { JSX } from 'react';
-import { useCallback } from 'react';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
 
 /**
@@ -34,25 +33,20 @@ export interface AppointmentLocationSelectProps {
 export function AppointmentLocationSelect(props: AppointmentLocationSelectProps): JSX.Element {
   const { location, onChange, label = 'Location', error, disabled } = props;
 
-  const handleChange = useCallback((locations: WithId<Location>[]) => onChange(locations[0]), [onChange]);
-
   return (
-    <MultiResourceInput<WithId<Location>>
-      // `MultiResourceInput` reads its value once, on mount. Keying on the selection
-      // remounts it, which is the only way to show a site the caller assigns later.
+    <ResourceInput<WithId<Location>>
       key={location?.id ?? 'empty'}
       resourceType="Location"
       name="location"
       label={label}
       placeholder="Search sites"
       required
-      maxValues={1}
       error={error}
       disabled={disabled}
-      defaultValue={location ? [location] : undefined}
+      defaultValue={location}
       searchCriteria={LOCATION_SEARCH_CRITERIA}
       itemComponent={LocationItem}
-      onChange={handleChange}
+      onChange={onChange}
     />
   );
 }

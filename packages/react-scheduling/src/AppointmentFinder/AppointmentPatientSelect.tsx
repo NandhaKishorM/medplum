@@ -54,8 +54,6 @@ export function AppointmentPatientSelect(props: AppointmentPatientSelectProps): 
 
   return (
     <MultiResourceInput<WithId<Patient>>
-      // `MultiResourceInput` reads its value once, on mount. Keying on the selection
-      // remounts it, which is the only way to show a patient the caller assigns later.
       key={patient?.id ?? 'empty'}
       resourceType="Patient"
       name="patient"
