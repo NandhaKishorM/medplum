@@ -4,7 +4,7 @@ import type { WithId } from '@medplum/core';
 import { HTTP_TERMINOLOGY_HL7_ORG, formatDate, getIdentifier } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
-import { MultiResourceInput } from '@medplum/react';
+import { ResourceInput } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback } from 'react';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
@@ -37,8 +37,6 @@ export interface AppointmentPatientSelectProps {
 export function AppointmentPatientSelect(props: AppointmentPatientSelectProps): JSX.Element {
   const { defaultValue, onChange, label = 'Patient', error, disabled, mrnSystem } = props;
 
-  const handleChange = useCallback((patients: WithId<Patient>[]) => onChange(patients[0]), [onChange]);
-
   const itemComponent = useCallback(
     (option: AsyncAutocompleteOption<WithId<Patient>>): JSX.Element => (
       <AppointmentOptionRow label={option.label} detail={formatPatientDetail(option.resource, mrnSystem)} />
@@ -47,19 +45,18 @@ export function AppointmentPatientSelect(props: AppointmentPatientSelectProps): 
   );
 
   return (
-    <MultiResourceInput<WithId<Patient>>
+    <ResourceInput<WithId<Patient>>
       resourceType="Patient"
       name="patient"
       label={label}
       placeholder="Search by name"
       required
-      maxValues={1}
       error={error}
       disabled={disabled}
-      defaultValue={defaultValue ? [defaultValue] : undefined}
+      defaultValue={defaultValue}
       searchCriteria={PATIENT_SEARCH_CRITERIA}
       itemComponent={itemComponent}
-      onChange={handleChange}
+      onChange={onChange}
     />
   );
 }
