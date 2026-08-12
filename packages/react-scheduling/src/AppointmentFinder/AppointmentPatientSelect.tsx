@@ -21,11 +21,6 @@ const MRN_TYPE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/v2-0203`;
 const MRN_TYPE_CODE = 'MR';
 
 export interface AppointmentPatientSelectProps {
-  /**
-   * The patient the field starts on, read once when it mounts. Reassigning it afterwards is
-   * ignored; a caller that has to move or clear the field from outside should key this
-   * component on its own selection, which mounts a fresh field on the new value.
-   */
   readonly defaultValue?: WithId<Patient>;
   readonly onChange: (patient: WithId<Patient> | undefined) => void;
   readonly label?: string;
@@ -44,7 +39,6 @@ export function AppointmentPatientSelect(props: AppointmentPatientSelectProps): 
 
   const handleChange = useCallback((patients: WithId<Patient>[]) => onChange(patients[0]), [onChange]);
 
-  // `itemComponent` takes no props beyond the option, so `mrnSystem` has to be closed over.
   const itemComponent = useCallback(
     (option: AsyncAutocompleteOption<WithId<Patient>>): JSX.Element => (
       <AppointmentOptionRow label={option.label} detail={formatPatientDetail(option.resource, mrnSystem)} />
@@ -53,9 +47,6 @@ export function AppointmentPatientSelect(props: AppointmentPatientSelectProps): 
   );
 
   return (
-    // `MultiResourceInput` rather than `ResourceInput`, which its siblings use: an
-    // appointment may need to carry more than one patient, and raising `maxValues` is
-    // the whole change when it does.
     <MultiResourceInput<WithId<Patient>>
       resourceType="Patient"
       name="patient"

@@ -13,11 +13,6 @@ import { AppointmentOptionRow } from './AppointmentOptionRow';
 const LOCATION_SEARCH_CRITERIA = { _count: '100', _sort: 'name' };
 
 export interface AppointmentLocationSelectProps {
-  /**
-   * The site the field starts on, read once when it mounts. Reassigning it afterwards is
-   * ignored; a caller that has to move or clear the field from outside should key this
-   * component on its own selection, which mounts a fresh field on the new value.
-   */
   readonly defaultValue?: WithId<Location>;
   readonly onChange: (location: WithId<Location> | undefined) => void;
   readonly label?: string;

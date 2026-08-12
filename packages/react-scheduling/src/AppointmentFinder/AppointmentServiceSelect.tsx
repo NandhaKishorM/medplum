@@ -17,15 +17,6 @@ import { getServiceDurationMinutes } from './AppointmentServiceSelect.utils';
 const SERVICE_SEARCH_CRITERIA = { _count: '25', _sort: 'name' };
 
 export interface AppointmentServiceSelectProps {
-  /**
-   * The visit type the field starts on, read once when it mounts. Reassigning it afterwards
-   * is ignored; a caller that has to move or clear the field from outside should key this
-   * component on its own selection, which mounts a fresh field on the new value.
-   *
-   * Clearing is what a `location` change needs — the new site may not offer the visit type
-   * on screen, and only the caller knows it has to go — so a caller that lets the site
-   * change is the one that has to key this field.
-   */
   readonly defaultValue?: WithId<HealthcareService>;
   readonly onChange: (service: WithId<HealthcareService> | undefined) => void;
   /** A chosen site, which narrows the services on offer to the ones held there. */
@@ -62,8 +53,7 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
       }
       const services = await medplum.searchResources('HealthcareService', searchParams, { signal });
       // The scheduling filter is applied here rather than in the search because it
-      // reads an extension, which no search parameter covers. Ordering stays with
-      // the server via `_sort`, which this filter preserves.
+      // reads an extension, which no search parameter covers.
       return services.filter(hasSchedulingParameters);
     },
     [medplum, locationReference]
@@ -96,10 +86,6 @@ function toOption(service: WithId<HealthcareService>): AsyncAutocompleteOption<W
 
 /**
  * One visit type on the list, described by what it is and how long it takes.
- *
- * The length is worth saying up front: it is the difference between two visit
- * types that otherwise read the same, and it decides what the search can offer.
- *
  * @param props - The option to render.
  * @returns The row.
  */
@@ -110,8 +96,6 @@ function ServiceItem(props: Readonly<AsyncAutocompleteOption<WithId<HealthcareSe
 function formatServiceDetail(service: WithId<HealthcareService>): string | undefined {
   const category = formatCodeableConcept(service.type?.[0]);
   const duration = getServiceDurationMinutes(service);
-  // `!== undefined` rather than a truthiness check: a zero-minute service is configured,
-  // and reading as if it were not would hide a misconfiguration `$find` will accept.
   const parts = [category, duration !== undefined ? `${duration} min` : undefined].filter(Boolean);
   return parts.join(' · ') || undefined;
 }
