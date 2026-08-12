@@ -72,18 +72,24 @@ export const SatelliteRoom: WithId<Location> = {
   partOf: { reference: 'Location/satellite-clinic' },
 };
 
-interface SchedulableServiceOptions {
+export interface SchedulableServiceOptions {
   readonly id: string;
   readonly name: string;
   /** What the visit is, which is the line the pick list shows under the name. */
   readonly category: string;
   readonly durationMinutes: number;
   readonly alignmentMinutes: number;
-  /** The sites holding it. A service at one site only is what makes narrowing visible. */
+  /** The sites holding it. */
   readonly locationIds: readonly string[];
 }
 
-function buildSchedulableService(options: SchedulableServiceOptions): WithId<HealthcareService> {
+/**
+ * Builds a service `$find` can produce times for: typed, sited, and carrying the
+ * `SchedulingParameters` a booking needs.
+ * @param options - What the visit is, how long it runs, and where it is held.
+ * @returns The service.
+ */
+export function buildSchedulableService(options: SchedulableServiceOptions): WithId<HealthcareService> {
   return {
     resourceType: 'HealthcareService',
     id: options.id,
@@ -110,60 +116,6 @@ export const UltrasoundImagingService = buildSchedulableService({
   durationMinutes: 30,
   alignmentMinutes: 15,
   locationIds: ['main-clinic'],
-});
-
-export const NewPatientConsultService = buildSchedulableService({
-  id: 'new-patient-consult',
-  name: 'New Patient Consultation',
-  category: 'Consultation',
-  durationMinutes: 45,
-  alignmentMinutes: 15,
-  locationIds: ['main-clinic', 'satellite-clinic'],
-});
-
-export const FollowUpVisitService = buildSchedulableService({
-  id: 'follow-up-visit',
-  name: 'Follow-up Visit',
-  category: 'Consultation',
-  durationMinutes: 15,
-  alignmentMinutes: 15,
-  locationIds: ['main-clinic', 'satellite-clinic'],
-});
-
-export const CystoscopyService = buildSchedulableService({
-  id: 'cystoscopy',
-  name: 'Cystoscopy',
-  category: 'Procedure',
-  durationMinutes: 30,
-  alignmentMinutes: 15,
-  locationIds: ['main-clinic'],
-});
-
-export const VasectomyService = buildSchedulableService({
-  id: 'vasectomy',
-  name: 'Vasectomy',
-  category: 'Procedure',
-  durationMinutes: 60,
-  alignmentMinutes: 30,
-  locationIds: ['main-clinic'],
-});
-
-export const UrodynamicsService = buildSchedulableService({
-  id: 'urodynamics',
-  name: 'Urodynamics Study',
-  category: 'Diagnostic',
-  durationMinutes: 60,
-  alignmentMinutes: 30,
-  locationIds: ['satellite-clinic'],
-});
-
-export const PsaBloodDrawService = buildSchedulableService({
-  id: 'psa-blood-draw',
-  name: 'PSA Blood Draw',
-  category: 'Lab',
-  durationMinutes: 10,
-  alignmentMinutes: 10,
-  locationIds: ['satellite-clinic'],
 });
 
 /** A service with no SchedulingParameters, which must never be offered. */
@@ -346,12 +298,6 @@ export const SchedulingFixtures = [
   SatelliteClinic,
   SatelliteRoom,
   UltrasoundImagingService,
-  NewPatientConsultService,
-  FollowUpVisitService,
-  CystoscopyService,
-  VasectomyService,
-  UrodynamicsService,
-  PsaBloodDrawService,
   WalkInService,
   DrRiveraPractitioner,
   DrOkaforPractitioner,

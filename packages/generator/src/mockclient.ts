@@ -72,7 +72,6 @@ const searchParams = [
   'Encounter-length',
   'HealthcareService-location',
   'HealthcareService-name',
-  'Location-name',
   'Communication-encounter',
   'Communication-part-of',
   'Media-encounter',

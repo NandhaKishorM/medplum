@@ -1,14 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, HTTP_TERMINOLOGY_HL7_ORG, SNOMED, UCUM, createReference } from '@medplum/core';
+import { ContentType, SNOMED, UCUM, createReference } from '@medplum/core';
 import type {
   Address,
-  CodeableConcept,
   Communication,
   DiagnosticReport,
   Encounter,
   Group,
-  Identifier,
   Media,
   Observation,
   Patient,
@@ -26,22 +24,6 @@ const SIMPSONS_ADDRESS: Address = {
   postalCode: '12345',
 };
 
-const MRN_SYSTEM = 'http://example.com/mrn';
-
-const MRN_TYPE: CodeableConcept = {
-  coding: [{ system: `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/v2-0203`, code: 'MR', display: 'Medical Record Number' }],
-  text: 'Medical Record Number',
-};
-
-/**
- * Builds a typed medical record number.
- * @param value - The medical record number.
- * @returns The identifier.
- */
-function mrn(value: string): Identifier {
-  return { type: MRN_TYPE, system: MRN_SYSTEM, value };
-}
-
 export const LisaSimpson: Patient = {
   resourceType: 'Patient',
   id: 'lisa-simpson',
@@ -50,7 +32,6 @@ export const LisaSimpson: Patient = {
     lastUpdated: '2020-01-01T12:00:00Z',
     author: createReference(DrAliceSmith),
   },
-  identifier: [mrn('7710346')],
   birthDate: '1981-05-09',
   name: [
     {
@@ -133,7 +114,6 @@ export const BartSimpson: Patient = {
     lastUpdated: '2020-01-01T12:00:00Z',
     author: createReference(DrAliceSmith),
   },
-  identifier: [mrn('8032471')],
   birthDate: '1979-12-17',
   name: [
     {
@@ -220,7 +200,10 @@ export const HomerSimpson: Patient = {
     lastUpdated: '2020-01-02T00:00:00.000Z',
     author: createReference(DrAliceSmith),
   },
-  identifier: [{ system: 'abc', value: '123' }, { system: 'def', value: '456' }, mrn('5527193')],
+  identifier: [
+    { system: 'abc', value: '123' },
+    { system: 'def', value: '456' },
+  ],
   active: true,
   birthDate: '1956-05-12',
   name: [
@@ -266,7 +249,7 @@ export const MargeSimpson: Patient = {
   resourceType: 'Patient',
   id: 'marge-simpson',
   gender: 'female',
-  identifier: [mrn('6194028')],
+
   active: true,
   birthDate: '1961-08-23',
   name: [

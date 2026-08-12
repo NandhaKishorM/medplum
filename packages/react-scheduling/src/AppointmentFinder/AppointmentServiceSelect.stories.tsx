@@ -8,13 +8,46 @@ import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { withFixtures } from '../stories/decorators';
-import { MainClinic, SchedulingFixtures } from '../stories/scheduling';
+import { buildSchedulableService, MainClinic, SchedulingFixtures } from '../stories/scheduling';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
+
+/**
+ * Enough visit types to read as a list, chosen for what each one shows: two share a
+ * category and differ only in length, and the third is held at the satellite site
+ * alone, so narrowing to the main clinic drops it.
+ */
+const STORY_FIXTURES = [
+  ...SchedulingFixtures,
+  buildSchedulableService({
+    id: 'new-patient-consult',
+    name: 'New Patient Consultation',
+    category: 'Consultation',
+    durationMinutes: 45,
+    alignmentMinutes: 15,
+    locationIds: ['main-clinic', 'satellite-clinic'],
+  }),
+  buildSchedulableService({
+    id: 'follow-up-visit',
+    name: 'Follow-up Visit',
+    category: 'Consultation',
+    durationMinutes: 15,
+    alignmentMinutes: 15,
+    locationIds: ['main-clinic', 'satellite-clinic'],
+  }),
+  buildSchedulableService({
+    id: 'urodynamics',
+    name: 'Urodynamics Study',
+    category: 'Diagnostic',
+    durationMinutes: 60,
+    alignmentMinutes: 30,
+    locationIds: ['satellite-clinic'],
+  }),
+];
 
 export default {
   title: 'Medplum/AppointmentServiceSelect',
   component: AppointmentServiceSelect,
-  decorators: [withFixtures(SchedulingFixtures)],
+  decorators: [withFixtures(STORY_FIXTURES)],
 } as Meta;
 
 /**
@@ -40,7 +73,8 @@ export const Basic = (): JSX.Element => {
 };
 
 /**
- * A site chosen earlier narrows what is on offer, and the field says so.
+ * A site chosen earlier narrows what is on offer, and the field says so. The
+ * satellite-only "Urodynamics Study" drops off the list.
  * @returns The story.
  */
 export const NarrowedToASite = (): JSX.Element => (
